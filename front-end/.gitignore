@@ -1,0 +1,54 @@
+# Node dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Environment files (store API keys and sensitive data here)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Next.js build output
+.next/
+out/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Local runtime files
+.next/
+out/
+coverage/
+.DS_Store
+*.pem
+
+# TypeScript
+*.tsbuildinfo
+
+# Testing
+jest.config.js
+cypress/
+cypress.json
+.vscode/
+.idea/
+
+# Ignore static generated files (if using `next export`)
+export/
+
+# Ignore storybook files
+.storybook/
+storybook-static/
+
+# Ignore Docker files (if applicable)
+docker-compose.override.yml

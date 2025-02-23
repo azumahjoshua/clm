@@ -1,0 +1,57 @@
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore environment files
+.env
+.env.*.local
+
+# Ignore log files and caches
+storage/*.log
+storage/logs/
+bootstrap/cache/
+
+# Ignore compiled PHP files
+vendor/
+node_modules/
+composer.lock
+npm-debug.log
+yarn-error.log
+public/storage
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/app/public
+
+# Ignore database files
+Homestead.yaml
+Homestead.json
+/.vagrant
+
+# Ignore Laravel package files
+.phpunit.result.cache
+.phpstorm.meta.php
+/_ide_helper.php
+/_ide_helper_models.php
+
+# Ignore Laravel Mix/webpack
+public/hot
+public/mix-manifest.json
+public/css/*.map
+public/js/*.map
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Ignore IDE and editor-specific files
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.vscode/
+
+# Ignore deployment-related files
+.env.local
+.env.development
+.env.production
+.env.testing
+deploy.php
