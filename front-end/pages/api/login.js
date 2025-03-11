@@ -5,6 +5,7 @@ import axios from 'axios';
 export default withSession(async (req, res) => {
     const {username, password} = await req.body
     const loginUrl = process.env.BACKEND_API_HOST+'/api/login';
+    console.log(`Login Url: ${loginUrl}`);
 
 
     try {
