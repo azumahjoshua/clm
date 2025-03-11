@@ -9,25 +9,32 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "apexcharts": "^3.54.1",
+    "@eslint/config-array": "^0.19.2",
+    "@eslint/object-schema": "^2.1.6",
+    "apexcharts": "^4.5.0",
     "axios": "^1.7.7",
+    "glob": "^11.0.1",
+    "iron-session": "^8.0.4",
     "next": "^15.1.7",
     "next-iron-session": "^4.2.0",
     "nprogress": "^0.2.0",
+    "picomatch": "^4.0.2",
     "pretty-checkbox": "^3.0.3",
-    "react": "19.0.0-rc-69d4b800-20241021",
-    "react-apexcharts": "^1.4.4",
+    "react": "^18.2.0",
+    "react-apexcharts": "^1.7.0",
     "react-data-table-component": "^7.6.2",
-    "react-dom": "19.0.0-rc-69d4b800-20241021",
+    "react-dom": "^18.2.0",
     "react-dropzone": "^14.2.10",
+    "rimraf": "^6.0.1",
     "styled-components": "^6.1.13",
     "sweetalert2": "^11.6.13"
   },
   "devDependencies": {
     "daisyui": "^4.12.13",
-    "eslint": "^8",
+    "eslint": "^9.21.0",
     "eslint-config-next": "15.0.1",
     "postcss": "^8",
-    "tailwindcss": "^3.4.1"
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.7.3"
   }
 }
