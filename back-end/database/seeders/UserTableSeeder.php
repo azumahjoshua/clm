@@ -18,7 +18,7 @@ class UserTableSeeder extends Seeder
             'last_name' => "User",
             'email' => "admin@clms.com",
             'phone' => "0000000",
-            'password' => bcrypt("admin")
+            'password' => bcrypt("password")
         ]);
     }
 }
