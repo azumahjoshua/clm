@@ -3,11 +3,11 @@ pipeline {
 
     environment {
         // AWS ECR Configuration
-        AWS_ACCOUNT_ID = "123456789012"
-        AWS_REGION = "us-east-1" 
+        // AWS_ACCOUNT_ID = "123456789012"
+        // AWS_REGION = "us-east-1" 
         BACKEND_REPOSITORY = "clm_backend"
         FRONTEND_REPOSITORY = "clm_frontend"
-        AWS_CREDENTIALS = credentials('aws-credentials') 
+        // AWS_CREDENTIALS = credentials('aws-credentials') 
         BACKEND_APP_NAME = "clm_backend" 
         FRONTEND_APP_NAME = "clm_frontend" 
 
