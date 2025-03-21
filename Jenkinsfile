@@ -3,8 +3,8 @@ pipeline {
 
     environment {
         // Define environment variables here
-        LARAVEL_DIR = 'back-end'  // Update with your Laravel app path
-        NEXTJS_DIR = 'front-end'  // Update with your Next.js app path
+        LARAVEL_DIR = './back-end'  
+        NEXTJS_DIR = './front-end'  
     }
 
     stages {
