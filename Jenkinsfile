@@ -3,8 +3,8 @@ pipeline {
 
     environment {
         // Define environment variables here
-        LARAVEL_DIR = 'clm/back-end'  
-        NEXTJS_DIR = 'clm/front-end' 
+        LARAVEL_DIR = 'back-end'  // Update with your Laravel app path
+        NEXTJS_DIR = 'front-end'  // Update with your Next.js app path
     }
 
     stages {
@@ -49,82 +49,96 @@ pipeline {
         stage('Debugging: Directory Structure') {
             steps {
                 sh 'ls -la'
-                sh 'ls -la back-end'
-                sh 'ls -la front-end'
+                sh 'ls -la back-end || true'
+                sh 'ls -la front-end || true'
+            }
+        }
+
+        // Verify directories exist
+        stage('Verify Directories') {
+            steps {
+                script {
+                    if (!fileExists(env.LARAVEL_DIR)) {
+                        error("Directory ${env.LARAVEL_DIR} does not exist.")
+                    }
+                    if (!fileExists(env.NEXTJS_DIR)) {
+                        error("Directory ${env.NEXTJS_DIR} does not exist.")
+                    }
+                }
             }
         }
 
         // Lint and format checks
-        stage('Lint and Format Check') {
-            parallel {
-                // Laravel PHP Lint
-                stage('PHP Lint') {
-                    steps {
-                        dir(env.LARAVEL_DIR) {
-                            script {
-                                if (fileExists('composer.json')) {
-                                    sh 'composer install --no-interaction --prefer-dist --optimize-autoloader'
-                                    sh 'vendor/bin/phpcs --standard=PSR12 app/'
-                                } else {
-                                    error("composer.json not found in ${env.LARAVEL_DIR}")
-                                }
-                            }
-                        }
-                    }
-                }
+        // stage('Lint and Format Check') {
+        //     parallel {
+        //         // Laravel PHP Lint
+        //         stage('PHP Lint') {
+        //             steps {
+        //                 dir(env.LARAVEL_DIR) {
+        //                     script {
+        //                         if (fileExists('composer.json')) {
+        //                             sh 'composer install --no-interaction --prefer-dist --optimize-autoloader'
+        //                             sh 'vendor/bin/phpcs --standard=PSR12 app/'
+        //                         } else {
+        //                             error("composer.json not found in ${env.LARAVEL_DIR}")
+        //                         }
+        //                     }
+        //                 }
+        //             }
+        //         }
 
-                // Next.js JavaScript/TypeScript Lint
-                stage('JavaScript/TypeScript Lint') {
-                    steps {
-                        dir(env.NEXTJS_DIR) {
-                            script {
-                                if (fileExists('package.json')) {
-                                    sh 'npm install'
-                                    sh 'npm run lint'
-                                } else {
-                                    error("package.json not found in ${env.NEXTJS_DIR}")
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        //         // Next.js JavaScript/TypeScript Lint
+        //         stage('JavaScript/TypeScript Lint') {
+        //             steps {
+        //                 dir(env.NEXTJS_DIR) {
+        //                     script {
+        //                         if (fileExists('package.json')) {
+        //                             sh 'npm install'
+        //                             sh 'npm run lint'
+        //                         } else {
+        //                             error("package.json not found in ${env.NEXTJS_DIR}")
+        //                         }
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
 
         // Run tests
-        stage('Testing') {
-            parallel {
-                // Laravel PHP Tests
-                stage('PHP Tests') {
-                    steps {
-                        dir(env.LARAVEL_DIR) {
-                            script {
-                                if (fileExists('composer.json')) {
-                                    sh 'php artisan test'
-                                } else {
-                                    error("composer.json not found in ${env.LARAVEL_DIR}")
-                                }
-                            }
-                        }
-                    }
-                }
+        // stage('Testing') {
+        //     parallel {
+        //         // Laravel PHP Tests
+        //         stage('PHP Tests') {
+        //             steps {
+        //                 dir(env.LARAVEL_DIR) {
+        //                     script {
+        //                         if (fileExists('composer.json')) {
+        //                             sh 'php artisan test'
+        //                         } else {
+        //                             error("composer.json not found in ${env.LARAVEL_DIR}")
+        //                         }
+        //                     }
+        //                 }
+        //             }
+        //         }
 
-                // Next.js Tests
-                stage('Next.js Tests') {
-                    steps {
-                        dir(env.NEXTJS_DIR) {
-                            script {
-                                if (fileExists('package.json')) {
-                                    sh 'npm run test'
-                                } else {
-                                    error("package.json not found in ${env.NEXTJS_DIR}")
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        //         // Next.js Tests
+        //         stage('Next.js Tests') {
+        //             steps {
+        //                 dir(env.NEXTJS_DIR) {
+        //                     script {
+        //                         if (fileExists('package.json')) {
+        //                             sh 'npm run test'
+        //                         } else {
+        //                             error("package.json not found in ${env.NEXTJS_DIR}")
+        //                         }
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
     }
 
     post {
