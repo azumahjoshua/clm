@@ -3,8 +3,8 @@ pipeline {
 
     environment {
         // Define environment variables here
-        LARAVEL_DIR = 'back-end'  
-        NEXTJS_DIR = 'front-end' 
+        LARAVEL_DIR = 'clm/back-end'  
+        NEXTJS_DIR = 'clm/front-end' 
     }
 
     stages {
