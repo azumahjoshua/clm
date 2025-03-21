@@ -14,7 +14,6 @@ bootstrap/cache/
 # Ignore compiled PHP files
 vendor/
 node_modules/
-composer.lock
 npm-debug.log
 yarn-error.log
 public/storage
