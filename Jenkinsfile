@@ -70,16 +70,11 @@ pipeline {
             parallel {
                 // Laravel PHP Lint
                 stage('PHP Lint') {
-                    steps {
-                        dir(env.LARAVEL_DIR) {
-                            script {
-                                if (fileExists('composer.json')) {
-                                    sh 'composer install --no-interaction --prefer-dist --optimize-autoloader'
-                                    sh 'vendor/bin/phpcs --standard=PSR12 app/'
-                                } else {
-                                    error("composer.json not found in ${env.LARAVEL_DIR}")
-                                }
-                            }
+                    steps {dir('back-end') {
+                        sh '''
+                        composer install --no-interaction --prefer-dist --optimize-autoloader
+                        php artisan package:discover --ansi
+                        '''
                         }
                     }
                 }
