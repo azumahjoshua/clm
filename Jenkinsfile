@@ -19,18 +19,18 @@ pipeline {
             }
         }
 
-        // stage('Verify Environment') {
-        //     steps {
-        //         script {
-        //             if (!fileExists(env.LARAVEL_DIR)) {
-        //                 error("Laravel directory not found at ${env.LARAVEL_DIR}")
-        //             }
-        //             if (!fileExists("${env.LARAVEL_DIR}/.env")) {
-        //                 error(".env file not found in Laravel directory")
-        //             }
-        //         }
-        //     }
-        // }
+        stage('Verify Environment') {
+            steps {
+                script {
+                    if (!fileExists(env.LARAVEL_DIR)) {
+                        error("Laravel directory not found at ${env.LARAVEL_DIR}")
+                    }
+                    if (!fileExists("${env.LARAVEL_DIR}/.env")) {
+                        error(".env file not found in Laravel directory")
+                    }
+                }
+            }
+        }
 
 //         stage('Prepare Laravel') {
 //     steps {
