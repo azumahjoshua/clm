@@ -2,8 +2,9 @@ pipeline {
     agent any
 
     environment {
-        LARAVEL_DIR = './back-end'
-        NEXTJS_DIR = './front-end'
+        // LARAVEL_DIR = './back-end'  
+        // NEXTJS_DIR = './front-end'
+        // Add any other environment variables needed
     }
 
     stages {
@@ -19,70 +20,77 @@ pipeline {
             }
         }
 
-        stage('Verify Environment') {
+        stage('Verifying Tools') {
             steps {
-                script {
-                    if (!fileExists(env.LARAVEL_DIR)) {
-                        error("Laravel directory not found at ${env.LARAVEL_DIR}")
-                    }
-                    if (!fileExists("${env.LARAVEL_DIR}/.env")) {
-                        error(".env file not found in Laravel directory")
-                    }
-                }
+                sh 'node -v'
+                sh 'npm -v'
+                sh 'php -v'
+                sh 'composer --version'
+                sh 'docker --version'
             }
         }
 
-//         stage('Prepare Laravel') {
-//     steps {
-//         dir(env.LARAVEL_DIR) {
-//             sh '''
-//             mkdir -p bootstrap/cache storage/framework/{sessions,views,cache}
-//             chmod -R 775 bootstrap/cache storage
-//             '''
-            
-//             script {
-//                 if (!fileExists('.env')) {
-//                     if (fileExists('.env')) {
-//                         sh 'cp .env .env'
-//                         sh 'chmod 644 .env'
-//                     } else {
-//                         error("No .env file found and no .env to create from")
-//                     }
-//                 } else {
-//                     sh 'chmod 644 .env'
-//                 }
-//             }
-//         }
-//     }
-// }
+        stage('Debugging: Directory Structure') {
+            steps {
+                sh 'ls -la'
+                sh 'ls -la back-end || true'
+                sh 'ls -la front-end || true'
+            }
+        }
 
-        // stage('Install Dependencies') {
+        // stage('Verify Directories') {
         //     steps {
-        //         dir(env.LARAVEL_DIR) {
-        //             sh '''
-        //             composer require "spatie/laravel-data:^4.14" --no-interaction
-        //             composer install --no-interaction --prefer-dist --optimize-autoloader
-        //             php artisan vendor:publish --tag=laravel-assets --ansi --force || true
-        //             php artisan key:generate
-        //             php artisan config:clear
-        //             php artisan package:discover --ansi
-        //             '''
+        //         script {
+        //             if (!fileExists(env.LARAVEL_DIR)) {
+        //                 error("Directory ${env.LARAVEL_DIR} does not exist.")
+        //             }
+        //             if (!fileExists(env.NEXTJS_DIR)) {
+        //                 error("Directory ${env.NEXTJS_DIR} does not exist.")
+        //             }
         //         }
         //     }
         // }
 
-        stage('Lint and Test') {
+        // stage('Prepare Laravel') {
+        //     steps {
+        //         dir(./back-end) {
+        //             script {
+        //                 // Create required directories with proper permissions
+        //                 sh '''
+        //                 mkdir -p bootstrap/cache storage/framework/{sessions,views,cache}
+        //                 chmod -R 775 bootstrap/cache storage
+        //                 chown -R jenkins:jenkins bootstrap/cache storage
+        //                 '''
+                        
+        //                 // Copy .env file if not exists
+        //                 sh '''
+        //                 if [ ! -f .env ]; then
+        //                     cp .env.example .env
+        //                     chmod 666 .env
+        //                 fi
+        //                 '''
+        //             }
+        //         }
+        //     }
+        // }
+
+        stage('Lint and Format Check') {
             parallel {
-                stage('PHP Tests') {
+                stage('PHP Lint') {
                     steps {
-                        dir(env.LARAVEL_DIR) {
-                            sh 'php artisan test'
+                        dir(./back-end) {
+                            sh '''
+                            composer install --no-interaction --prefer-dist --optimize-autoloader
+                            php artisan key:generate
+                            php artisan package:discover --ansi
+                            '''
                         }
                     }
                 }
-                stage('Frontend Lint') {
+
+                stage('JavaScript/TypeScript Lint') {
                     steps {
-                        dir(env.NEXTJS_DIR) {
+                        dir(./front-end) {
                             sh '''
                             npm install
                             npm run lint
@@ -92,14 +100,39 @@ pipeline {
                 }
             }
         }
+
+        // stage('Testing') {
+        //     parallel {
+        //         stage('PHP Tests') {
+        //             steps {
+        //                 dir(env.LARAVEL_DIR) {
+        //                     sh 'php artisan test'
+        //                 }
+        //             }
+        //         }
+
+        //         // Uncomment when you have front-end tests
+        //         // stage('Next.js Tests') {
+        //         //     steps {
+        //         //         dir(env.NEXTJS_DIR) {
+        //         //             sh 'npm run test'
+        //         //         }
+        //         //     }
+        //         // }
+        //     }
+        // }
     }
 
     post {
+        always {
+            // Clean up or archive artifacts if needed
+        }
         success {
             echo 'Pipeline succeeded!'
         }
         failure {
             echo 'Pipeline failed! Check the logs for errors.'
+            // You might want to add notification here
         }
     }
 }
