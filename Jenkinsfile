@@ -22,49 +22,6 @@ pipeline {
             }
         }
 
-        stage('Verifying Tools') {
-            steps {
-                script {
-                    sh 'node -v'
-                    sh 'npm -v'
-                    sh 'php -v'
-                    sh 'composer --version'
-                    sh 'docker --version'
-                }
-            }
-        }
-
-        stage('Debugging: Directory Structure') {
-            steps {
-                sh 'ls -la'
-                sh 'ls -la back-end || true'
-                sh 'ls -la front-end || true'
-            }
-        }
-
-        stage('Verify Directories') {
-            steps {
-                script {
-                    if (!fileExists(env.LARAVEL_DIR)) {
-                        error("Directory ${env.LARAVEL_DIR} does not exist.")
-                    }
-                    if (!fileExists(env.NEXTJS_DIR)) {
-                        error("Directory ${env.NEXTJS_DIR} does not exist.")
-                    }
-                }
-            }
-        }
-        stage('Prepare Laravel') {
-            steps {
-                dir(env.LARAVEL_DIR) {
-                    script {
-                        sh 'mkdir -p bootstrap/cache'
-                        sh 'chmod -R 775 bootstrap/cache'
-                        sh 'sudo chown -R jenkins:jenkins storage bootstrap/cache'
-                        }
-                    }
-                }
-            }
         // Lint and format checks
         stage('Lint and Format Check') {
             parallel {
@@ -114,21 +71,6 @@ pipeline {
                         }
                     }
                 }
-
-                // // Next.js Tests
-                // stage('Next.js Tests') {
-                //     steps {
-                //         dir(env.NEXTJS_DIR) {
-                //             script {
-                //                 if (fileExists('package.json')) {
-                //                     sh 'npm run test'
-                //                 } else {
-                //                     error("package.json not found in ${env.NEXTJS_DIR}")
-                //                 }
-                //             }
-                //         }
-                //     }
-                // }
             }
         }
     }
