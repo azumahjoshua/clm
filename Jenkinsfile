@@ -8,11 +8,11 @@ pipeline {
     // }
 
     stages {
-        // stage('Cleaning Workspace') {
-        //     steps {
-        //         cleanWs()
-        //     }
-        // }
+        stage('Cleaning Workspace') {
+            steps {
+                cleanWs()
+            }
+        }
 
         stage('Checkout Code') {
             steps {
@@ -20,15 +20,15 @@ pipeline {
             }
         }
 
-        // stage('Verifying Tools') {
-        //     steps {
-        //         sh 'node -v'
-        //         sh 'npm -v'
-        //         sh 'php -v'
-        //         sh 'composer --version'
-        //         sh 'docker --version'
-        //     }
-        // }
+        stage('Verifying Tools') {
+            steps {
+                sh 'node -v'
+                sh 'npm -v'
+                sh 'php -v'
+                sh 'composer --version'
+                sh 'docker --version'
+            }
+        }
 
         // stage('Debugging: Directory Structure') {
         //     steps {
