@@ -19,59 +19,62 @@ pipeline {
             }
         }
 
-        stage('Prepare Laravel Environment') {
+        stage('Verify Environment') {
+            steps {
+                script {
+                    if (!fileExists(env.LARAVEL_DIR)) {
+                        error("Laravel directory not found at ${env.LARAVEL_DIR}")
+                    }
+                    if (!fileExists("${env.LARAVEL_DIR}/.env")) {
+                        error(".env file not found in Laravel directory")
+                    }
+                }
+            }
+        }
+
+        stage('Prepare Laravel') {
             steps {
                 dir(env.LARAVEL_DIR) {
-                    // Create required directories with proper permissions
                     sh '''
                     mkdir -p bootstrap/cache storage/framework/{sessions,views,cache}
                     chmod -R 775 bootstrap/cache storage
-                    '''
-                    
-                    // Copy .env file if not exists
-                    sh '''
-                    if [ ! -f .env ]; then
-                        cp .env.example .env
-                        chmod 666 .env
-                    fi
+                    chmod 644 .env
                     '''
                 }
             }
         }
 
-        stage('Lint and Format Check') {
+        stage('Install Dependencies') {
+            steps {
+                dir(env.LARAVEL_DIR) {
+                    sh '''
+                    composer require "spatie/laravel-data:^4.14" --no-interaction
+                    composer install --no-interaction --prefer-dist --optimize-autoloader
+                    php artisan vendor:publish --tag=laravel-assets --ansi --force || true
+                    php artisan key:generate
+                    php artisan config:clear
+                    php artisan package:discover --ansi
+                    '''
+                }
+            }
+        }
+
+        stage('Lint and Test') {
             parallel {
-                stage('PHP Lint') {
+                stage('PHP Tests') {
                     steps {
                         dir(env.LARAVEL_DIR) {
-                            sh '''
-                            composer install --no-interaction --prefer-dist --optimize-autoloader
-                            php artisan key:generate
-                            php artisan package:discover --ansi
-                            '''
+                            sh 'php artisan test'
                         }
                     }
                 }
-
-                stage('JavaScript/TypeScript Lint') {
+                stage('Frontend Lint') {
                     steps {
                         dir(env.NEXTJS_DIR) {
                             sh '''
                             npm install
                             npm run lint
                             '''
-                        }
-                    }
-                }
-            }
-        }
-
-        stage('Testing') {
-            parallel {
-                stage('PHP Tests') {
-                    steps {
-                        dir(env.LARAVEL_DIR) {
-                            sh 'php artisan test'
                         }
                     }
                 }
