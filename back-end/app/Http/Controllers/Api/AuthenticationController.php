@@ -94,5 +94,4 @@ class AuthenticationController extends Controller
 
         return response()->json(null, Response::HTTP_OK);
     }
-
 }

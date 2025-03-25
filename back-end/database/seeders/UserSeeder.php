@@ -18,7 +18,7 @@ class UserSeeder extends Seeder
                 'username' => $faker->userName,  // Generate a fake username
                 'first_name' => $faker->firstName,  // Generate a fake first name
                 'last_name' => $faker->lastName,  // Generate a fake last name
-                'phone' => $faker->phoneNumber,  // Generate a fake phone number
+                'phone' => $faker->numerify('##########'),  // Generate a consistent phone number format
                 'email' => $faker->unique()->safeEmail,  // Generate a unique fake email
                 'password' => bcrypt('password'),  // Hash a default password, or use bcrypt($faker->password) for a random password
             ]);

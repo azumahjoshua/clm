@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
+use Illuminate\Support\Facades\Hash;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -12,14 +12,21 @@ class LoginAPITest extends TestCase
 {
     use RefreshDatabase;
 
+    const TEST_USERNAME = 'abanda';
+    const TEST_PASSWORD = 'password';
+    const NEW_PASSWORD = '12344321';
+
     public function test_can_login_with_valid_credentials(): void
     {
-        User::factory()->create(['username' => "abanda"]);
+        User::factory()->create([
+            'username' => self::TEST_USERNAME,
+            'password' => bcrypt(self::TEST_PASSWORD),
+        ]);
 
         $data = [
-            'username' => "abanda"
+            'username' => self::TEST_USERNAME,
+            'password' => self::TEST_PASSWORD,
         ];
-
 
         $response = $this->postJson("/api/login", $data);
 
@@ -33,32 +40,28 @@ class LoginAPITest extends TestCase
 
     public function test_can_reject_invalid_credentials()
     {
-        User::factory()->create(['username' => "abanda"]);
+        User::factory()->create(['username' => self::TEST_USERNAME]);
 
         $data = [
-            'username' => "abanda2",
-            'password' => "password"
+            'username' => "invalid_username",
+            'password' => "invalid_password",
         ];
-
 
         $response = $this->postJson("/api/login", $data);
         $response->assertUnprocessable();
     }
 
-
     public function test_user_can_logout()
     {
+        $user = User::factory()->create(['username' => self::TEST_USERNAME]);
 
-        $user = User::factory()->create(['username' => "abanda"]);
         $data = [
-            'username' => "abanda",
-            'password' => "password"
+            'username' => self::TEST_USERNAME,
+            'password' => self::TEST_PASSWORD,
         ];
 
         $response = $this->postJson("/api/login", $data);
         $response->assertOk();
-
-        //
 
         $response = $this->withHeaders([
             "Authorization" => "Bearer {$response->decodeResponseJson()['api_token']}"
@@ -72,12 +75,11 @@ class LoginAPITest extends TestCase
 
     public function test_can_change_password()
     {
-
-        $user = User::factory()->create(['username' => "abanda"]);
+        $user = User::factory()->create(['username' => self::TEST_USERNAME]);
 
         $data = [
-            'password' => "12344321",
-            'password_confirmation' => "123444321",
+            'password' => self::NEW_PASSWORD,
+            'password_confirmation' => self::NEW_PASSWORD,
         ];
 
         Sanctum::actingAs($user);
@@ -85,15 +87,16 @@ class LoginAPITest extends TestCase
 
         $response->assertOk();
 
+        // Verify the password was updated in the database
+        $this->assertTrue(Hash::check(self::NEW_PASSWORD, $user->fresh()->password));
 
-        // try to login
+        // Try to login with the new password
         $data = [
-            'username' => "abanda",
-            'password' => "12344321"
+            'username' => self::TEST_USERNAME,
+            'password' => self::NEW_PASSWORD,
         ];
 
         $response = $this->postJson("/api/login", $data);
         $response->assertOk();
     }
-
 }
