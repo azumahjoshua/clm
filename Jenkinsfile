@@ -1,11 +1,11 @@
 pipeline {
     agent any
 
-    // environment {
-        // LARAVEL_DIR = './back-end'  
-        // NEXTJS_DIR = './front-end'
+    environment {
+        LARAVEL_DIR = './back-end'  
+        NEXTJS_DIR = './front-end'
         // Add any other environment variables needed
-    // }
+    }
 
     stages {
         stage('Cleaning Workspace') {
@@ -37,11 +37,12 @@ pipeline {
                 sh 'ls -la front-end || true'
             }
         }
+
         stage('Lint and Format Check') {
             parallel {
                 stage('PHP Lint') {
                     steps {
-                        dir(back-end) {
+                        dir('back-end') {
                             sh '''
                             composer install --no-interaction --prefer-dist --optimize-autoloader
                             php artisan key:generate
@@ -53,9 +54,9 @@ pipeline {
 
                 stage('JavaScript/TypeScript Lint') {
                     steps {
-                        dir(front-end) {
+                        dir('front-end') {
                             sh '''
-                            npm install
+                            npm ci
                             npm run lint
                             '''
                         }
@@ -67,7 +68,7 @@ pipeline {
 
     post {
         always {
-            // Clean up or archive artifacts if needed
+            echo 'Pipeline completed. Checking final status...'
         }
         success {
             echo 'Pipeline succeeded!'
