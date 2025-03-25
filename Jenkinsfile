@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        LARAVEL_DIR = './back-end'  
-        NEXTJS_DIR = './front-end'  
+        LARAVEL_DIR = './back-end'
+        NEXTJS_DIR = './front-end'
     }
 
     stages {
@@ -13,61 +13,65 @@ pipeline {
             }
         }
 
-        // Clone the repository
         stage('Checkout Code') {
             steps {
-                script {
-                    checkout scm
+                checkout scm
+            }
+        }
+
+        stage('Prepare Laravel Environment') {
+            steps {
+                dir(env.LARAVEL_DIR) {
+                    // Create required directories with proper permissions
+                    sh '''
+                    mkdir -p bootstrap/cache storage/framework/{sessions,views,cache}
+                    chmod -R 775 bootstrap/cache storage
+                    '''
+                    
+                    // Copy .env file if not exists
+                    sh '''
+                    if [ ! -f .env ]; then
+                        cp .env.example .env
+                        chmod 666 .env
+                    fi
+                    '''
                 }
             }
         }
 
-        // Lint and format checks
         stage('Lint and Format Check') {
             parallel {
-                // Laravel PHP Lint
                 stage('PHP Lint') {
-                    steps {dir('back-end') {
-                        sh '''
-                        composer install --no-interaction --prefer-dist --optimize-autoloader
-                        php artisan package:discover --ansi
-                        '''
+                    steps {
+                        dir(env.LARAVEL_DIR) {
+                            sh '''
+                            composer install --no-interaction --prefer-dist --optimize-autoloader
+                            php artisan key:generate
+                            php artisan package:discover --ansi
+                            '''
                         }
                     }
                 }
 
-                // Next.js JavaScript/TypeScript Lint
                 stage('JavaScript/TypeScript Lint') {
                     steps {
                         dir(env.NEXTJS_DIR) {
-                            script {
-                                if (fileExists('package.json')) {
-                                    sh 'npm install'
-                                    sh 'npm run lint'
-                                } else {
-                                    error("package.json not found in ${env.NEXTJS_DIR}")
-                                }
-                            }
+                            sh '''
+                            npm install
+                            npm run lint
+                            '''
                         }
                     }
                 }
             }
         }
 
-        // Run tests
         stage('Testing') {
             parallel {
-                // Laravel PHP Tests
                 stage('PHP Tests') {
                     steps {
                         dir(env.LARAVEL_DIR) {
-                            script {
-                                if (fileExists('composer.json')) {
-                                    sh 'php artisan test'
-                                } else {
-                                    error("composer.json not found in ${env.LARAVEL_DIR}")
-                                }
-                            }
+                            sh 'php artisan test'
                         }
                     }
                 }
