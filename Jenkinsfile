@@ -54,7 +54,17 @@ pipeline {
                 }
             }
         }
-
+        stage('Prepare Laravel') {
+            steps {
+                dir(env.LARAVEL_DIR) {
+                    script {
+                        sh 'mkdir -p bootstrap/cache'
+                        sh 'chmod -R 775 bootstrap/cache'
+                        sh 'sudo chown -R jenkins:jenkins storage bootstrap/cache'
+                        }
+                    }
+                }
+            }
         // Lint and format checks
         stage('Lint and Format Check') {
             parallel {
