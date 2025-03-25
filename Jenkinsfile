@@ -37,43 +37,6 @@ pipeline {
                 sh 'ls -la front-end || true'
             }
         }
-
-        // stage('Verify Directories') {
-        //     steps {
-        //         script {
-        //             if (!fileExists(env.LARAVEL_DIR)) {
-        //                 error("Directory ${env.LARAVEL_DIR} does not exist.")
-        //             }
-        //             if (!fileExists(env.NEXTJS_DIR)) {
-        //                 error("Directory ${env.NEXTJS_DIR} does not exist.")
-        //             }
-        //         }
-        //     }
-        // }
-
-        // stage('Prepare Laravel') {
-        //     steps {
-        //         dir(./back-end) {
-        //             script {
-        //                 // Create required directories with proper permissions
-        //                 sh '''
-        //                 mkdir -p bootstrap/cache storage/framework/{sessions,views,cache}
-        //                 chmod -R 775 bootstrap/cache storage
-        //                 chown -R jenkins:jenkins bootstrap/cache storage
-        //                 '''
-                        
-        //                 // Copy .env file if not exists
-        //                 sh '''
-        //                 if [ ! -f .env ]; then
-        //                     cp .env.example .env
-        //                     chmod 666 .env
-        //                 fi
-        //                 '''
-        //             }
-        //         }
-        //     }
-        // }
-
         stage('Lint and Format Check') {
             parallel {
                 stage('PHP Lint') {
@@ -100,27 +63,6 @@ pipeline {
                 }
             }
         }
-
-        // stage('Testing') {
-        //     parallel {
-        //         stage('PHP Tests') {
-        //             steps {
-        //                 dir(env.LARAVEL_DIR) {
-        //                     sh 'php artisan test'
-        //                 }
-        //             }
-        //         }
-
-        //         // Uncomment when you have front-end tests
-        //         // stage('Next.js Tests') {
-        //         //     steps {
-        //         //         dir(env.NEXTJS_DIR) {
-        //         //             sh 'npm run test'
-        //         //         }
-        //         //     }
-        //         // }
-        //     }
-        // }
     }
 
     post {
