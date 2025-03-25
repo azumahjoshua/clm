@@ -30,40 +30,40 @@ pipeline {
             }
         }
 
-        // stage('Debugging: Directory Structure') {
-        //     steps {
-        //         sh 'ls -la'
-        //         sh 'ls -la back-end || true'
-        //         sh 'ls -la front-end || true'
-        //     }
-        // }
+        stage('Debugging: Directory Structure') {
+            steps {
+                sh 'ls -la'
+                sh 'ls -la back-end || true'
+                sh 'ls -la front-end || true'
+            }
+        }
 
-        // stage('Lint and Format Check') {
-        //     parallel {
-        //         stage('PHP Lint') {
-        //             steps {
-        //                 dir('back-end') {
-        //                     sh '''
-        //                     composer install --no-interaction --prefer-dist --optimize-autoloader
-        //                     php artisan key:generate
-        //                     php artisan package:discover --ansi
-        //                     '''
-        //                 }
-        //             }
-        //         }
+        stage('Lint and Format Check') {
+            parallel {
+                stage('PHP Lint') {
+                    steps {
+                        dir('back-end') {
+                            sh '''
+                            composer install --no-interaction --prefer-dist --optimize-autoloader
+                            php artisan key:generate
+                            php artisan package:discover --ansi
+                            '''
+                        }
+                    }
+                }
 
-        //         stage('JavaScript/TypeScript Lint') {
-        //             steps {
-        //                 dir('front-end') {
-        //                     sh '''
-        //                     npm ci
-        //                     npm run lint
-        //                     '''
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
+                stage('JavaScript/TypeScript Lint') {
+                    steps {
+                        dir('front-end') {
+                            sh '''
+                            npm ci
+                            npm run lint
+                            '''
+                        }
+                    }
+                }
+            }
+        }
     }
 
     post {
