@@ -6,11 +6,15 @@ services:
     container_name: clm-backend
     volumes:
       - clm-storage:/var/www/storage
-      # - clm-bootstrap-cache:/var/www/bootstrap/cache
     networks:
       - clm-network
-    env_file:
-      - ./back-end/.env
+    environment:
+      - DB_CONNECTION=pgsql
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
     restart: unless-stopped
     ports:
       - "8000:8000"  
