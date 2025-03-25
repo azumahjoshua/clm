@@ -33,16 +33,28 @@ pipeline {
         }
 
         stage('Prepare Laravel') {
-            steps {
-                dir(env.LARAVEL_DIR) {
-                    sh '''
-                    mkdir -p bootstrap/cache storage/framework/{sessions,views,cache}
-                    chmod -R 775 bootstrap/cache storage
-                    chmod 644 .env
-                    '''
+    steps {
+        dir(env.LARAVEL_DIR) {
+            sh '''
+            mkdir -p bootstrap/cache storage/framework/{sessions,views,cache}
+            chmod -R 775 bootstrap/cache storage
+            '''
+            
+            script {
+                if (!fileExists('.env')) {
+                    if (fileExists('.env')) {
+                        sh 'cp .env .env'
+                        sh 'chmod 644 .env'
+                    } else {
+                        error("No .env file found and no .env to create from")
+                    }
+                } else {
+                    sh 'chmod 644 .env'
                 }
             }
         }
+    }
+}
 
         stage('Install Dependencies') {
             steps {
