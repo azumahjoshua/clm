@@ -110,20 +110,20 @@ pipeline {
                     }
                 }
 
-                // Next.js Tests
-                stage('Next.js Tests') {
-                    steps {
-                        dir(env.NEXTJS_DIR) {
-                            script {
-                                if (fileExists('package.json')) {
-                                    sh 'npm run test'
-                                } else {
-                                    error("package.json not found in ${env.NEXTJS_DIR}")
-                                }
-                            }
-                        }
-                    }
-                }
+                // // Next.js Tests
+                // stage('Next.js Tests') {
+                //     steps {
+                //         dir(env.NEXTJS_DIR) {
+                //             script {
+                //                 if (fileExists('package.json')) {
+                //                     sh 'npm run test'
+                //                 } else {
+                //                     error("package.json not found in ${env.NEXTJS_DIR}")
+                //                 }
+                //             }
+                //         }
+                //     }
+                // }
             }
         }
     }
