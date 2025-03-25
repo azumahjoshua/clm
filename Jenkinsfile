@@ -1,11 +1,11 @@
 pipeline {
     agent any
 
-    environment {
+    // environment {
         // LARAVEL_DIR = './back-end'  
         // NEXTJS_DIR = './front-end'
         // Add any other environment variables needed
-    }
+    // }
 
     stages {
         stage('Cleaning Workspace') {
