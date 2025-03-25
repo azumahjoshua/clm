@@ -78,7 +78,7 @@ pipeline {
             parallel {
                 stage('PHP Lint') {
                     steps {
-                        dir(./back-end) {
+                        dir(back-end) {
                             sh '''
                             composer install --no-interaction --prefer-dist --optimize-autoloader
                             php artisan key:generate
@@ -90,7 +90,7 @@ pipeline {
 
                 stage('JavaScript/TypeScript Lint') {
                     steps {
-                        dir(./front-end) {
+                        dir(front-end) {
                             sh '''
                             npm install
                             npm run lint
