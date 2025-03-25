@@ -8,11 +8,11 @@ pipeline {
     // }
 
     stages {
-        stage('Cleaning Workspace') {
-            steps {
-                cleanWs()
-            }
-        }
+        // stage('Cleaning Workspace') {
+        //     steps {
+        //         cleanWs()
+        //     }
+        // }
 
         stage('Checkout Code') {
             steps {
