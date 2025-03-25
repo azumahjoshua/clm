@@ -1,4 +1,4 @@
-import {useContext, useEffect, useState} from "react";
+import {useContext, useEffect, useState, useCallback} from "react";
 import axios from "axios";
 import {errorAlert, successAlert, sweetConfirm} from "@/lib/alerts";
 import {AppContext} from "@/components/context";
@@ -7,67 +7,51 @@ import UserView from "@/components/users/view";
 
 export default function UsersIndex({users}) {
     const config = useContext(AppContext);
-
     const [isLoading, setIsLoading] = useState(true);
     const [data, setData] = useState([]);
     const [query, setQuery] = useState("");
     const [activeRecord, setActiveRecord] = useState(null);
 
+    const fetchData = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const response = await axios.get(`${config.backendUrl}/admin/users`, {
+                headers: {...config.authHeader}
+            });
+            if (response.status === 200) {
+                setData(response.data.data);
+            }
+        } catch (err) {
+            console.log(err);
+            errorAlert("Oops!", "Failed to fetch data.");
+        }
+        setIsLoading(false);
+    }, [config.backendUrl, config.authHeader]);
+
     useEffect(() => {
         fetchData();
-
-
-    }, []);
-
+    }, [fetchData]);
 
     const deleteDatum = async (datum) => {
         try {
             const response = await axios.delete(`${config.backendUrl}/admin/users/${datum.id}`, {
                 headers: {...config.authHeader}
             });
-
             if (response.status === 204) {
                 setData(data.filter(item => item.id !== datum.id));
                 setActiveRecord(null);
                 successAlert("Deleted!", "User has been deleted successfully.");
             }
-
         } catch (err) {
             errorAlert("Oops!", "Something went wrong!");
         }
     }
+
     const initDeletion = async () => {
         const confirmed = await sweetConfirm("Delete this item?", "You won't be able to undo this!");
-
         if (confirmed) {
             await deleteDatum(activeRecord);
-        } else {
-            console.log("Action canceled");
         }
-
-    }
-
-    const fetchData = async () => {
-        setIsLoading(true);
-
-        try {
-            const response = await axios.get(`${config.backendUrl}/admin/users`, {
-                headers: {...config.authHeader}
-            });
-
-            if (response.status === 200) {
-                // filter out job-seeker role
-                let data = response.data.data;
-
-                setData(data);
-            }
-
-        } catch (err) {
-            console.log(err);
-            errorAlert("Oops!", "Failed to fetch data.");
-        }
-
-        setIsLoading(false);
     }
 
     if (isLoading) {
