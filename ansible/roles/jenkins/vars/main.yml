@@ -1,0 +1,17 @@
+---
+# vars/main.yml
+jenkins_java_package: openjdk-17-jdk
+jenkins_repo_key_url: https://pkg.jenkins.io/debian-stable/jenkins.io.key
+jenkins_repo: "deb [signed-by=/usr/share/keyrings/jenkins-keyring.gpg] https://pkg.jenkins.io/debian-stable binary/"
+jenkins_http_port: 8080
+jenkins_home: /var/lib/jenkins
+jenkins_workspace_path: /var/lib/jenkins/workspace/clm_cicd
+
+node_version: 20 
+
+npm_global_packages:
+  - eslint
+  - prettier
+  - typescript
+  - ts-node
+  - tslint

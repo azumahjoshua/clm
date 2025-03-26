@@ -1,0 +1,4 @@
+jenkins:
+  hosts:
+    jenkins-0:
+      ansible_host: 54.87.52.87
