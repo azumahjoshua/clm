@@ -28,7 +28,7 @@ pipeline {
                 stage('Frontend') {
                     steps {
                         dir('front-end') {
-                            sh 'npm install'
+                            sh 'npm ci --no-audit'
                         }
                     }
                 }
@@ -36,15 +36,16 @@ pipeline {
                     steps {
                         dir('back-end') {
                             sh'''
-                            sudo mkdir -p bootstrap/cache
-                            sudo chmod -R 775 bootstrap/cache
-                            sudo chown -R jenkins:jenkins bootstrap/cache
+                            sudo mkdir -p bootstrap/cache storage/framework/{sessions,views,cache}
+                            sudo chmod -R 775 bootstrap/cache storage
+                            sudo chown -R jenkins:jenkins bootstrap/cache storage
                             '''
-                            sh 'composer install --no-interaction --prefer-dist --optimize-autoloader'
 
                             sh '''
-                            composer remove spatie/data-transfer-object
-                            composer require spatie/laravel-data
+                            composer install --no-interaction --prefer-dist --optimize-autoloader --no-scripts
+                            composer remove spatie/data-transfer-object --no-update
+                            composer require spatie/laravel-data --no-scripts
+                            composer update --no-scripts
                             '''
                         }
                     }
