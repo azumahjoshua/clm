@@ -23,24 +23,24 @@ pipeline {
             }
         }
 
-        // stage('Install Dependencies') {
-        //     parallel {
-        //         stage('Frontend') {
-        //             steps {
-        //                 dir('front-end') {
-        //                     sh 'npm install'
-        //                 }
-        //             }
-        //         }
-        //         stage('Backend') {
-        //             steps {
-        //                 dir('back-end') {
-        //                     sh 'composer install --no-interaction --prefer-dist --optimize-autoloader'
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
+        stage('Install Dependencies') {
+            parallel {
+                stage('Frontend') {
+                    steps {
+                        dir('front-end') {
+                            sh 'npm install'
+                        }
+                    }
+                }
+                stage('Backend') {
+                    steps {
+                        dir('back-end') {
+                            sh 'composer install --no-interaction --prefer-dist --optimize-autoloader'
+                        }
+                    }
+                }
+            }
+        }
 
         // stage('Linting') {
         //     parallel {
