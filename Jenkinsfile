@@ -42,7 +42,7 @@ pipeline {
                     steps {
                         dir('front-end') {
                             sh '''
-                            npm ci
+                            npm install
                             npm run lint
                             '''
                         }
