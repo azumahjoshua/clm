@@ -111,6 +111,7 @@ pipeline {
                 stage('PHP Unit Tests') {
                     steps {
                         dir('back-end') {
+                            sh 'ls -la back-end/test'
                             sh 'php artisan test'
                         }
                     }
