@@ -2,11 +2,6 @@ pipeline {
     agent any
     
     stages {
-        stage('Cleaning Workspace') {
-            steps {
-                cleanWs()
-            }
-        }
 
         stage('Checkout Code') {
             steps {
@@ -29,6 +24,12 @@ pipeline {
                 sh 'ls -la'
                 sh 'ls -la back-end'
                 sh 'ls -la front-end'
+            }
+        }
+        
+        stage('Cleaning Workspace') {
+            steps {
+                cleanWs()
             }
         }
 
