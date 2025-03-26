@@ -35,7 +35,17 @@ pipeline {
                 stage('Backend') {
                     steps {
                         dir('back-end') {
+                            sh'''
+                            sudo mkdir -p bootstrap/cache
+                            sudo chmod -R 775 bootstrap/cache
+                            sudo chown -R jenkins:jenkins bootstrap/cache
+                            '''
                             sh 'composer install --no-interaction --prefer-dist --optimize-autoloader'
+
+                            sh '''
+                            composer remove spatie/data-transfer-object
+                            composer require spatie/laravel-data
+                            '''
                         }
                     }
                 }
