@@ -24,6 +24,14 @@ pipeline {
             }
         }
 
+        stage('Debugging: Directory Structure'){
+            steps{
+                sh 'ls -la'
+                sh 'ls -la back-end'
+                sh 'ls -la front-end'
+            }
+        }
+
     }
 
     post {
