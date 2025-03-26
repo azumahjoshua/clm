@@ -2,13 +2,11 @@ pipeline {
     agent any
     
     stages {
-
         stage('Checkout Code') {
             steps {
                 checkout scm
             }
         }
-
         stage('Verifying Tools') {
             steps {
                 sh 'node -v'
@@ -26,10 +24,30 @@ pipeline {
                 sh 'ls -la front-end'
             }
         }
-        
-        stage('Cleaning Workspace') {
-            steps {
-                cleanWs()
+        stage('Backend Linting') {
+            parallel {
+                stage('PHP Lint') {
+                    steps {
+                        dir('back-end') {
+                            sh '''
+                            composer install --no-interaction --prefer-dist --optimize-autoloader
+                            php artisan key:generate
+                            php artisan package:discover --ansi
+                            '''
+                        }
+                    }
+                }
+
+                stage('Frontend Linting') {
+                    steps {
+                        dir('front-end') {
+                            sh '''
+                            npm ci
+                            npm run lint
+                            '''
+                        }
+                    }
+                }
             }
         }
 
