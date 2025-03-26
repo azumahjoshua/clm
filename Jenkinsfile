@@ -115,16 +115,16 @@ pipeline {
                         }
                     }
                 }
-                stage('Frontend Tests') {
-                    steps {
-                        sh '''
-                        echo "Frontend Testing!!!
-                        '''
-                        // dir('front-end') {
-                        //     sh 'npm test'
-                        // }
-                    }
-                }
+                // stage('Frontend Tests') {
+                //     steps {
+                //         sh '''
+                //         echo "Frontend Testing!!!
+                //         '''
+                //         // dir('front-end') {
+                //         //     sh 'npm test'
+                //         // }
+                //     }
+                // }
             }
         }
 
