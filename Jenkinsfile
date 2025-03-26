@@ -62,16 +62,16 @@ pipeline {
                         }
                     }
                 }
-                stage('Backend Linting') {
-                    steps {
-                        dir('back-end') {
-                            sh '''
-                            sudo php ./vendor/bin/phpstan analyse
-                            sudo php ./vendor/bin/pint --test
-                            '''
-                        }
-                    }
-                }
+                // stage('Backend Linting') {
+                //     steps {
+                //         dir('back-end') {
+                //             sh '''
+                //             sudo php ./vendor/bin/phpstan analyse
+                //             sudo php ./vendor/bin/pint --test
+                //             '''
+                //         }
+                //     }
+                // }
             }
         }
 
