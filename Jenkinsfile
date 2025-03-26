@@ -65,8 +65,10 @@ pipeline {
                 stage('Backend Linting') {
                     steps {
                         dir('back-end') {
-                            sh 'php ./vendor/bin/phpstan analyse'
-                            sh 'php ./vendor/bin/pint --test'
+                            sh '''
+                            sudo php ./vendor/bin/phpstan analyse
+                            sudo php ./vendor/bin/pint --test
+                            '''
                         }
                     }
                 }
