@@ -138,11 +138,11 @@ pipeline {
     }
 
     post {
-        always {
-            junit 'back-end/tests/**/*.xml'
-            archiveArtifacts artifacts: 'back-end/storage/logs/*.log', allowEmptyArchive: true
-            echo 'Pipeline completed. Checking final status...'
-        }
+        // always {
+        //     junit 'back-end/tests/**/*.xml'
+        //     archiveArtifacts artifacts: 'back-end/storage/logs/*.log', allowEmptyArchive: true
+        //     echo 'Pipeline completed. Checking final status...'
+        // }
         success {
             echo 'Pipeline succeeded!'
             // mail to: 'team@example.com', subject: 'Pipeline Success', body: 'Build succeeded'
