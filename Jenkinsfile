@@ -30,6 +30,11 @@ pipeline {
                     steps {
                         dir('back-end') {
                             sh '''
+                            sudo mkdir -p bootstrap/cache
+                            sudo chmod -R 775 bootstrap/cache
+                            sudo chown -R jenkins:jenkins bootstrap/cache
+                            '''
+                            sh '''
                             composer install --no-interaction --prefer-dist --optimize-autoloader
                             php artisan key:generate
                             php artisan package:discover --ansi
