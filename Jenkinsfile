@@ -111,7 +111,7 @@ pipeline {
                 stage('PHP Unit Tests') {
                     steps {
                         dir('back-end') {
-                            sh 'php artisan test --log-junit storage/logs/junit.xml'
+                            sh 'php artisan test'
                         }
                     }
                 }
