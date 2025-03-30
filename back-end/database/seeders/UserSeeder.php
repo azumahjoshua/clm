@@ -15,12 +15,12 @@ class UserSeeder extends Seeder
         // Generate 10 fake users
         foreach (range(1, 10) as $index) {
             User::create([
-                'username' => $faker->userName,  // Generate a fake username
-                'first_name' => $faker->firstName,  // Generate a fake first name
-                'last_name' => $faker->lastName,  // Generate a fake last name
-                'phone' => $faker->numerify('##########'),  // Generate a consistent phone number format
-                'email' => $faker->unique()->safeEmail,  // Generate a unique fake email
-                'password' => bcrypt('password'),  // Hash a default password, or use bcrypt($faker->password) for a random password
+                'username' => $faker->userName,  
+                'first_name' => $faker->firstName,  
+                'last_name' => $faker->lastName,  
+                'phone' =>'+1'.$faker->numerify('##########'),  
+                'email' => $faker->unique()->safeEmail,  
+                'password' => bcrypt('password'), 
             ]);
         }
     }
