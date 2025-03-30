@@ -14,118 +14,24 @@ pipeline {
             }
         }
 
-        // stage('Install Dependencies') {
-        //     parallel {
-        //         stage('Frontend') {
-        //             steps {
-        //                 dir('front-end') {
-        //                     sh 'npm ci --no-audit'
-        //                 }
-        //             }
-        //         }
-        //         stage('Backend') {
-        //             steps {
-        //                 dir('back-end') {
-        //                     sh'''
-        //                     sudo mkdir -p bootstrap/cache storage/framework/{sessions,views,cache}
-        //                     sudo chmod -R 775 bootstrap/cache storage
-        //                     sudo chown -R jenkins:jenkins bootstrap/cache storage
-        //                     '''
-
-        //                     sh '''
-        //                     composer install --no-interaction --prefer-dist --optimize-autoloader --no-scripts
-        //                     composer remove spatie/data-transfer-object --no-update
-        //                     composer require spatie/laravel-data --no-scripts
-        //                     composer update --no-scripts
-        //                     '''
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
-
-        // stage('Linting') {
-        //     parallel {
-        //         stage('Frontend Linting') {
-        //             steps {
-        //                 dir('front-end') {
-        //                     sh 'npm run lint'
-        //                 }
-        //             }
-        //         }
-        //         // stage('Backend Linting') {
-        //         //     steps {
-        //         //         dir('back-end') {
-        //         //             sh '''
-        //         //             sudo php ./vendor/bin/phpstan analyse
-        //         //             sudo php ./vendor/bin/pint --test
-        //         //             '''
-        //         //         }
-        //         //     }
-        //         // }
-        //     }
-        // }
-
-        // stage('Setup Environment') {
-        //     steps {
-        //         dir('back-end') {
-        //             sh '''
-        //             cat > .env.testing <<EOL
-        //             DB_CONNECTION=$DB_CONNECTION
-        //             DB_HOST=$DB_HOST
-        //             DB_PORT=$DB_PORT
-        //             DB_DATABASE=$DB_DATABASE
-        //             DB_USERNAME=$DB_USERNAME
-        //             DB_PASSWORD=$DB_PASSWORD
-        //             EOL
-        //             '''
-        //             sh 'php artisan config:clear'
-        //             sh 'php artisan cache:clear'
-        //         }
-        //     }
-        // }
-
-        // stage('Run Migrations') {
-        //     steps {
-        //         dir('back-end') {
-        //             retry(3) {
-        //                 timeout(time: 5, unit: 'MINUTES') {
-        //                     sh 'php artisan migrate:fresh --env=testing --force --seed'
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
-
-        // stage('Testing') {
-        //     parallel {
-        //         stage('PHP Unit Tests') {
-        //             steps {
-        //                 dir('back-end') {
-        //                     sh 'php artisan test'
-        //                 }
-        //             }
-        //         }
-        //         // stage('Frontend Tests') {
-        //         //     steps {
-        //         //         sh '''
-        //         //         echo "Frontend Testing!!!
-        //         //         '''
-        //         //         // dir('front-end') {
-        //         //         //     sh 'npm test'
-        //         //         // }
-        //         //     }
-        //         // }
-        //     }
-        // }
-
-        // stage('Cleanup') {
-        //     steps {
-        //         dir('back-end') {
-        //             sh 'php artisan migrate:reset --env=testing'
-        //         }
-        //     }
-        // }
+        stage('Build Docker images'){
+            parallel{
+                stage('Build Frontend Images'){
+                    steps{
+                    dir('front-end') {
+                            sh 'docker build -t clm_frontend:latest .'
+                        
+                        }
+                    }
+                }
+                stage('Build Backend Image'){
+                    dir('back-end'){
+                        sh 'docker build -t clm_backend:latest .'
+                    }
+                }
+            }
+        }
+       
     }
 
     post {
