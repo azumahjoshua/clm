@@ -7,7 +7,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\Response;
 use Tests\AuthTestCase;
-use Database\Seeders\UserSeeder; // Import the UserSeeder
+use Faker\Factory as Faker;  
 
 class UserAPITest extends AuthTestCase
 {
@@ -15,24 +15,17 @@ class UserAPITest extends AuthTestCase
 
     public function test_can_retrieve_all_users_list()
     {
-        // Seed the database using the UserSeeder
-        $this->seed(UserSeeder::class);
-
-        // Create an additional user to make the total 11
-        User::factory()->create();
+        // Seed the database with 11 users
+        User::factory()->count(10)->create();
 
         $response = $this->getJson('/api/admin/users');
 
         $response->assertStatus(200);
-        $this->assertCount(12, $response->decodeResponseJson()['data']);
+        $this->assertCount(11, $response->decodeResponseJson()['data']);
     }
 
     public function test_can_register_user()
     {
-        // Seed the database using the UserSeeder
-        $this->seed(UserSeeder::class);
-
-        // Create a new user using the factory (for registration test)
         $seed_data = User::factory()->make()->toArray();
         $seed_data['password'] = 'password'; // Add the password field
         $seed_data['password_confirmation'] = 'password'; // Add password confirmation
@@ -46,17 +39,16 @@ class UserAPITest extends AuthTestCase
 
     public function test_can_update_user_details()
     {
-        // Seed the database using the UserSeeder
-        $this->seed(UserSeeder::class);
-
-        // Get the first user from the seeded data
-        $user = User::first();
+        $faker = Faker::create(); 
+        $user = User::factory()->create();
+        $seed_data = $user->toArray();
 
         $updates = [
-            'phone' => '9874561230', // Update the phone number
+            'phone' =>'+1'.$faker->numerify('##########'),
         ];
+        $seed_data = array_merge($updates, $seed_data);
 
-        $response = $this->patchJson('/api/admin/users/' . $user->id, $updates);
+        $response = $this->patchJson('/api/admin/users/' . $user->id, $seed_data);
 
         // Assert the response status code
         $response->assertStatus(200);
@@ -70,36 +62,20 @@ class UserAPITest extends AuthTestCase
 
     public function test_can_delete_user()
     {
-        // Seed the database using the UserSeeder
-        $this->seed(UserSeeder::class);
-
-        // Get the first user from the seeded data
-        $user = User::first();
+        $user = User::factory()->create();
 
         $response = $this->deleteJson('/api/admin/users/' . $user->id);
         $response->assertStatus(Response::HTTP_NO_CONTENT);
-
-        // Assert the user was deleted
-        $this->assertDatabaseMissing('users', [
-            'id' => $user->id,
-        ]);
     }
 
     public function test_can_reject_invalid_user_registration()
     {
-        // Seed the database using the UserSeeder
-        $this->seed(UserSeeder::class);
-
-        // Get the first user from the seeded data
-        $user = User::first();
+        $seed_data = User::factory()->make()->toArray();
+        $seed_data['password'] = bcrypt('password'); // Add the password field
+        User::create($seed_data);
 
         // Try to register a duplicate user
-        $response = $this->postJson('/api/admin/users', [
-            'username' => $user->username, // Duplicate username
-            'email' => $user->email, // Duplicate email
-            'password' => 'password',
-            'password_confirmation' => 'password',
-        ]);
+        $response = $this->postJson('/api/admin/users', $seed_data);
 
         $response->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
     }

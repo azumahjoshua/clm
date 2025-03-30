@@ -11,16 +11,16 @@ class UserTableSeeder extends Seeder
     /**
      * Run the database seeds.
      */
-
     
     public function run(): void
     {
+        $faker = Faker::create(); 
         $user = User::create([
             'username' => "admin",
             'first_name' => "admin",
             'last_name' => "clm",
             'email' => "admin@clms.com",
-            'phone' => "1234567890",
+            'phone' =>'+1'.$faker->numerify('##########'),  // Generate a consistent phone number format
             'password' => bcrypt("password")
         ]);
     }

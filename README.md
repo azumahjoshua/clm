@@ -94,3 +94,39 @@ The backend will be available at **http://127.0.0.1:8000**.
     ```
 
 The frontend will be available at **http://localhost:3000**
+
+
+<!-- git checkout -b ansible-setup
+git add ansible/
+git commit -m "Initialize Ansible setup"
+git push origin ansible-setup
+
+git checkout -b fullstack-dev
+git add back-end/
+git commit -m "Initialize backend development"
+git push origin fullstack-dev
+
+git checkout -b  fullstack-dev
+git add front-end/
+git commit -m "Initialize frontend development"
+git push origin  fullstack-dev
+
+git checkout -b terraform-infra
+git add terraform/
+git commit -m "Initialize Terraform infrastructure"
+git push origin terraform-infra
+
+git checkout -b deployment-scripts
+git add deploy.sh push-to-ecr.sh set_env.sh
+git commit -m "Initialize deployment scripts"
+git push origin deployment-scripts
+
+git checkout -b nginx-config
+git add nginx/
+git commit -m "Initialize Nginx configuration"
+git push origin nginx-config
+
+git checkout -b jenkins-pipeline
+git add Jenkinsfile Jenkinsfile_old
+git commit -m "Initialize Jenkins pipeline"
+git push origin jenkins-pipeline -->

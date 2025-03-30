@@ -25,7 +25,7 @@ COPY . .
 ENV NODE_ENV=production
 
 # Build Next.js app
-RUN npm run build && rm -rf node_modules
+RUN npm run build
 
 # Stage 3: Run the Next.js app (Final lightweight image)
 FROM node:20-alpine AS runner
@@ -35,10 +35,12 @@ WORKDIR /app
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
+
+# Copy dependencies again to restore `node_modules`
 COPY --from=deps /app/node_modules ./node_modules 
 
 # Expose Next.js port
 EXPOSE 3000
 
 # Start the Next.js app
-CMD ["npm", "start"]
+CMD ["npm", "run", "start"]

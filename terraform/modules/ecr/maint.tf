@@ -8,7 +8,7 @@ resource "aws_ecrpublic_repository" "this" {
   }
 
   # Enable on-push vulnerability scanning
-  image_scanning_configuration {
-    scan_on_push = true
-  }
+  # image_scanning_configuration {
+  #   scan_on_push = true
+  # }
 }

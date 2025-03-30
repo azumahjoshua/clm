@@ -1,6 +1,6 @@
 terraform {
   backend "s3" {
-    bucket = "banks3-terraform-bucket-20250203"
+    bucket = "clm-terraform-bucket-202502040-joshua"
     key    = "terraform/state.tfstate"
     region = "us-east-1"
   }
