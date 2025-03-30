@@ -2,50 +2,47 @@ pipeline {
     agent any
 
     stages {
-        stage('Cleaning Workspace') {
+         stage('Cleaning Workspace') {
             steps {
                 cleanWs()
             }
         }
+
         stage('Checkout Code') {
             steps {
-                checkout scm: [
-                    $class: 'GitSCM',
-                    branches: [[name: "*/${params.BRANCH_NAME}"]],
-                    // userRemoteConfigs: [[url: 'git@github.com:your-repo.git', credentialsId: 'your-credentials-id']]
-                ]
+                checkout scm
             }
         }
 
-        stage('Install Dependencies') {
-            parallel {
-                stage('Frontend') {
-                    steps {
-                        dir('front-end') {
-                            sh 'npm ci --no-audit'
-                        }
-                    }
-                }
-                stage('Backend') {
-                    steps {
-                        dir('back-end') {
-                            sh'''
-                            sudo mkdir -p bootstrap/cache storage/framework/{sessions,views,cache}
-                            sudo chmod -R 775 bootstrap/cache storage
-                            sudo chown -R jenkins:jenkins bootstrap/cache storage
-                            '''
+        // stage('Install Dependencies') {
+        //     parallel {
+        //         stage('Frontend') {
+        //             steps {
+        //                 dir('front-end') {
+        //                     sh 'npm ci --no-audit'
+        //                 }
+        //             }
+        //         }
+        //         stage('Backend') {
+        //             steps {
+        //                 dir('back-end') {
+        //                     sh'''
+        //                     sudo mkdir -p bootstrap/cache storage/framework/{sessions,views,cache}
+        //                     sudo chmod -R 775 bootstrap/cache storage
+        //                     sudo chown -R jenkins:jenkins bootstrap/cache storage
+        //                     '''
 
-                            sh '''
-                            composer install --no-interaction --prefer-dist --optimize-autoloader --no-scripts
-                            composer remove spatie/data-transfer-object --no-update
-                            composer require spatie/laravel-data --no-scripts
-                            composer update --no-scripts
-                            '''
-                        }
-                    }
-                }
-            }
-        }
+        //                     sh '''
+        //                     composer install --no-interaction --prefer-dist --optimize-autoloader --no-scripts
+        //                     composer remove spatie/data-transfer-object --no-update
+        //                     composer require spatie/laravel-data --no-scripts
+        //                     composer update --no-scripts
+        //                     '''
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
 
         // stage('Linting') {
         //     parallel {
