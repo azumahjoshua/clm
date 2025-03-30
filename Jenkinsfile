@@ -13,7 +13,11 @@ pipeline {
                 checkout scm
             }
         }
-
+        stage('Preparing Build Stage'){
+            steps{
+                echo 'Running...'
+            }
+        }
         stage('Build Docker Images') {
             parallel {
                 stage('Build Frontend Image') {
