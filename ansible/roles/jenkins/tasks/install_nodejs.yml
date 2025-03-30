@@ -1,0 +1,21 @@
+---
+- name: Install Node.js
+  block:
+    - name: Add NodeSource repo
+      ansible.builtin.shell: |
+        curl -fsSL https://deb.nodesource.com/setup_{{ node_version }}.x | bash -
+      args:
+        creates: /etc/apt/sources.list.d/nodesource.list
+    
+    - name: Install Node.js
+      ansible.builtin.apt:
+        name: nodejs
+        state: present
+        update_cache: yes
+    
+    - name: Install global npm packages
+      community.general.npm:
+        name: "{{ item }}"
+        global: yes
+      loop: "{{ npm_global_packages }}"
+  tags: [nodejs, install]

@@ -1,0 +1,19 @@
+---
+- name: Configure firewall
+  block:
+    - name: Allow SSH
+      community.general.ufw:
+        rule: allow
+        port: 22
+        proto: tcp
+    
+    - name: Allow Jenkins port
+      community.general.ufw:
+        rule: allow
+        port: "{{ jenkins_http_port }}"
+        proto: tcp
+    
+    # - name: Enable firewall
+    #   community.general.ufw:
+    #     state: enabled
+  tags: [firewall, configure]

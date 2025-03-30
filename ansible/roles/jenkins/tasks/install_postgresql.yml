@@ -1,0 +1,57 @@
+---
+- name: Configure PostgreSQL for testing
+  block:
+    - name: Add PostgreSQL repository key
+      ansible.builtin.apt_key:
+        url: "https://www.postgresql.org/media/keys/ACCC4CF8.asc"
+        state: present
+
+    - name: Add PostgreSQL repository
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=amd64] https://apt.postgresql.org/pub/repos/apt {{ ansible_distribution_release }}-pgdg main"
+        state: present
+        filename: postgresql
+
+    - name: Install PostgreSQL packages
+      ansible.builtin.apt:
+        name: "{{ postgresql_packages }}"
+        state: present
+        update_cache: yes
+
+    - name: Create test database user
+      become: yes
+      become_user: postgres
+      community.postgresql.postgresql_user:
+        name: "{{ db_user_test }}"
+        password: "{{ db_password_test }}"
+        state: present
+
+    - name: Create test database
+      become: yes
+      become_user: postgres
+      community.postgresql.postgresql_db:
+        name: "{{ db_name_test }}"
+        owner: "{{ db_user_test }}"
+        state: present
+
+    - name: restart postgresql
+      ansible.builtin.service:
+        name: postgresql@{{ postgresql_version }}-main
+        state: restarted
+
+    - name: Grant privileges
+      become: yes
+      become_user: postgres
+      community.postgresql.postgresql_privs:
+        database: "{{ db_name_test }}"
+        roles: "{{ db_user_test }}"
+        privs: ALL
+        type: database
+
+    - name: Configure pg_hba.conf
+      ansible.builtin.lineinfile:
+        path: "/etc/postgresql/{{ postgresql_version }}/main/pg_hba.conf"
+        line: "host {{ db_name_test }} {{ db_user_test }} 127.0.0.1/32 md5"
+        insertafter: EOF
+      notify: restart postgresql
+  tags: [postgresql, testing]

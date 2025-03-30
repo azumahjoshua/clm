@@ -1,12 +1,12 @@
-plugin: aws_ec2
+plugin: amazon.aws.aws_ec2
 regions:
   - us-east-1
 filters:
   instance-state-name: running
-  tag:Environment: jenkins
-  tag:Role: jenkins
-keyed_groups:
-  - key: tags.Role
-    prefix: aws_Role
+  tag:Role: jenkins            
+  tag:Environment: production  
 compose:
   ansible_host: public_ip_address
+keyed_groups:
+  - key: tags.Role
+    prefix: "jenkins"

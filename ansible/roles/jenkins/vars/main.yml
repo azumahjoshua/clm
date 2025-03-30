@@ -1,17 +1,64 @@
 ---
-# vars/main.yml
-jenkins_java_package: openjdk-17-jdk
-jenkins_repo_key_url: https://pkg.jenkins.io/debian-stable/jenkins.io.key
-jenkins_repo: "deb [signed-by=/usr/share/keyrings/jenkins-keyring.gpg] https://pkg.jenkins.io/debian-stable binary/"
+# Java configuration
+java_packages:
+  - openjdk-17-jdk  # Fallback option
+  - openjdk-21-jdk  # Primary choice
+
+# Jenkins configuration
+jenkins_repo: "deb https://pkg.jenkins.io/debian binary/"
 jenkins_http_port: 8080
 jenkins_home: /var/lib/jenkins
-jenkins_workspace_path: /var/lib/jenkins/workspace/clm_cicd
 
-node_version: 20 
+# System dependencies
+system_packages:
+  - apt-transport-https
+  - ca-certificates
+  - curl
+  - wget
+  - gnupg2
+  - software-properties-common
+  - lsb-release
+  - git
+  - unzip
+  - build-essential
 
+# Docker configuration
+docker_packages:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+
+# PHP configuration
+php_version: "8.3"
+php_packages:
+  - php{{ php_version }}
+  - php{{ php_version }}-cli
+  - php{{ php_version }}-common
+  - php{{ php_version }}-curl
+  - php{{ php_version }}-mbstring
+  - php{{ php_version }}-xml
+  - php{{ php_version }}-zip
+  - php{{ php_version }}-bcmath
+  - php{{ php_version }}-pgsql
+  - php{{ php_version }}-dev
+  - php{{ php_version }}-gd
+  - php{{ php_version }}-xdebug
+
+# PostgreSQL configuration
+postgresql_version: "16"  # or "17" when available
+postgresql_packages:
+  - postgresql-{{ postgresql_version }}
+  - postgresql-client-{{ postgresql_version }}
+  - postgresql-contrib-{{ postgresql_version }}
+  - postgresql-server-dev-{{ postgresql_version }}
+db_user_test: testuser
+db_password_test: testpass
+db_name_test: testdb
+
+# Node.js configuration
+node_version: "18"
 npm_global_packages:
-  - eslint
-  - prettier
-  - typescript
-  - ts-node
-  - tslint
+  - npm
+
+# Workspace configuration
+jenkins_workspace_path: /var/lib/jenkins/workspace

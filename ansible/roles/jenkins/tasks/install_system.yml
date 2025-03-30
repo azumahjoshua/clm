@@ -1,0 +1,12 @@
+---
+- name: Update and upgrade apt packages
+  ansible.builtin.apt:
+    update_cache: yes
+    upgrade: dist
+  tags: [system, update]
+
+- name: Install system dependencies
+  ansible.builtin.apt:
+    name: "{{ system_packages }}"
+    state: present
+  tags: [system, install]

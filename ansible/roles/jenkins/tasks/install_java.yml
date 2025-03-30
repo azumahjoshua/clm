@@ -1,0 +1,32 @@
+---
+- name: Install Java (JDK 21/17)
+  block:
+    - name: Attempt to install JDK 17
+      ansible.builtin.apt:
+        name: openjdk-17-jdk
+        state: present
+      register: java_install
+      ignore_errors: yes
+
+    - name: Fallback to JDK 21 if JDK 17 fails
+      ansible.builtin.apt:
+        name: openjdk-21-jdk
+        state: present
+      when: java_install is failed
+
+    - name: Set JAVA_HOME environment variable
+      ansible.builtin.lineinfile:
+        path: /etc/environment
+        line: "JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64"
+        regexp: "^JAVA_HOME="
+        state: present
+      when: java_install is success
+
+    - name: Fallback JAVA_HOME for JDK 17
+      ansible.builtin.lineinfile:
+        path: /etc/environment
+        line: "JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64"
+        regexp: "^JAVA_HOME="
+        state: present
+      when: java_install is failed
+  tags: [java, install]
