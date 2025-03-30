@@ -1,0 +1,32 @@
+---
+- name: Verify services
+  block:
+    - name: Verify Java
+      ansible.builtin.command: java -version
+      register: java_version
+      changed_when: false
+      ignore_errors: yes
+    
+    - name: Verify Docker
+      ansible.builtin.command: docker --version
+      register: docker_version
+      changed_when: false
+    
+    - name: Verify Node.js
+      ansible.builtin.command: node --version
+      register: node_version
+      changed_when: false
+    
+    - name: Verify PHP
+      ansible.builtin.command: php --version
+      register: php_version
+      changed_when: false
+    
+    - name: Display versions
+      ansible.builtin.debug:
+        msg:
+          - "Java: {{ java_version.stderr | default(java_version.stdout) | regex_replace('\n', '') }}"
+          - "Docker: {{ docker_version.stdout }}"
+          - "Node.js: {{ node_version.stdout }}"
+          - "PHP: {{ php_version.stdout }}"
+  tags: [verify]

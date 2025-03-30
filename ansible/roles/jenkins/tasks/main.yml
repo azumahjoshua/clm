@@ -1,362 +1,40 @@
 ---
-- name: Initial system update
-  apt:
-    update_cache: yes
-    cache_valid_time: 3600
-  tags:
-    - update
-    - system
+- name: Include system setup tasks
+  include_tasks: install_system.yml
+  tags: [system]
 
-- name: Install Java (Jenkins dependency)
-  apt:
-    name: "{{ jenkins_java_package }}"
-    state: present
-  tags:
-    - install
-    - java
+- name: Include Java installation tasks
+  include_tasks: install_java.yml
+  tags: [java]
 
-- name: Install system dependencies
-  apt:
-    name:
-      - apt-transport-https
-      - ca-certificates
-      - curl
-      - wget
-      - gnupg2
-      - software-properties-common
-      - lsb-release
-      - git
-      - unzip
-      - build-essential
-    state: present
-  register: pkg_install
-  until: pkg_install is succeeded
-  retries: 3
-  delay: 5
-  tags:
-    - install
-    - system
+- name: Include Jenkins installation tasks
+  include_tasks: install_jenkins.yml
+  tags: [jenkins]
 
-- name: Install required packages for key verification
-  apt:
-    name: gnupg2
-    state: present
-  tags:
-    - install
-    - repository
+- name: Include Docker installation tasks
+  include_tasks: install_docker.yml
+  tags: [docker]
 
-- name: Download Jenkins repository key
-  get_url:
-    url: https://pkg.jenkins.io/debian/jenkins.io-2023.key
-    dest: /usr/share/keyrings/jenkins-keyring.asc
-    mode: '0644'
-  tags:
-    - install
-    - repository
+- name: Include PHP installation tasks
+  include_tasks: install_php.yml
+  tags: [php]
 
-- name: Add Jenkins repository
-  apt_repository:
-    repo: "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian binary/"
-    state: present
-    filename: jenkins
-    update_cache: yes
-  register: add_repo
-  until: add_repo is succeeded
-  retries: 3
-  delay: 5
-  tags:
-    - install
-    - repository
+- name: Include PostgreSQL installation tasks
+  include_tasks: install_postgresql.yml
+  tags: [postgresql]
 
+- name: Include Node.js installation tasks
+  include_tasks: install_nodejs.yml
+  tags: [nodejs]
 
-- name: Add Docker GPG key
-  apt_key:
-    url: https://download.docker.com/linux/ubuntu/gpg
-    state: present
-    keyring: /usr/share/keyrings/docker-archive-keyring.gpg
-  tags:
-    - install
-    - docker
+- name: Include AWS CLI installation tasks
+  include_tasks: install_awscli.yml
+  tags: [awscli]
 
-- name: Add Docker repository
-  apt_repository:
-    repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
-    state: present
-    filename: docker
-  tags:
-    - install
-    - docker
+- name: Include firewall configuration tasks
+  include_tasks: configure_firewall.yml
+  tags: [firewall]
 
-- name: Add PHP repository
-  apt_repository:
-    repo: "ppa:ondrej/php"
-    state: present
-  tags:
-    - install
-    - php
-
-- name: Install Jenkins
-  apt:
-    name: jenkins
-    state: present
-  tags:
-    - install
-    - jenkins
-
-- name: Start and enable Jenkins service
-  systemd:
-    name: jenkins
-    state: started
-    enabled: yes
-  tags:
-    - configure
-    - service
-
-- name: Install Docker
-  apt:
-    name:
-      - docker-ce
-      - docker-ce-cli
-      - containerd.io
-    state: present
-  tags:
-    - install
-    - docker
-
-- name: Start and enable Docker service
-  systemd:
-    name: docker
-    state: started
-    enabled: yes
-  tags:
-    - configure
-    - docker
-
-- name: Add Jenkins user to Docker group
-  user:
-    name: jenkins
-    groups: docker
-    append: yes
-  tags:
-    - configure
-    - docker
-
-- name: Install PHP 8.3 and Composer
-  block:
-    - name: Install PHP 8.3 and required extensions
-      apt:
-        name:
-          - php8.3
-          - php8.3-cli
-          - php8.3-common
-          - php8.3-curl
-          - php8.3-mbstring
-          - php8.3-xml
-          - php8.3-zip
-          - php8.3-bcmath
-          - php8.3-pgsql
-          - php8.3-dev
-          - php8.3-gd
-        state: present
-
-    - name: Check if Composer is already installed
-      stat:
-        path: /usr/local/bin/composer
-      register: composer_installed
-
-    - name: Install Composer if not already installed
-      get_url:
-        url: https://getcomposer.org/installer
-        dest: /tmp/composer-setup.php
-      when: not composer_installed.stat.exists
-
-    - name: Run Composer installer
-      command: php /tmp/composer-setup.php --install-dir=/usr/local/bin --filename=composer
-      args:
-        creates: /usr/local/bin/composer
-      when: not composer_installed.stat.exists
-
-    - name: Remove Composer installer
-      file:
-        path: /tmp/composer-setup.php
-        state: absent
-      when: not composer_installed.stat.exists
-  tags:
-    - install
-    - php
-
-- name: Ensure bootstrap/cache directory exists
-  file:
-    path: "{{ jenkins_workspace_path }}/back-end/bootstrap/cache"
-    state: directory
-    owner: jenkins
-    group: jenkins
-    mode: '0755'
-  tags:
-    - laravel
-    - permissions
-    - cache
-
-- name: Update Laravel dependencies
-  shell: |
-    composer remove spatie/data-transfer-object --optimize-autoloader --no-interaction
-    composer require spatie/laravel-data --optimize-autoloader --no-interaction
-  args:
-    chdir: "{{ jenkins_workspace_path }}/back-end"
-  tags:
-    - laravel
-    - composer
-    - dependencies
-
-- name: Install PostgreSQL
-  block:
-    - name: Install PostgreSQL
-      apt:
-        name:
-          - postgresql
-          - postgresql-contrib
-        state: present
-
-    - name: Ensure PostgreSQL service is running and enabled
-      systemd:
-        name: postgresql
-        state: started
-        enabled: yes
-
-    - name: Install PHP PostgreSQL extension
-      apt:
-        name: php8.3-pgsql
-        state: present
-  tags:
-    - install
-    - postgresql
-
-- name: Install Node.js via official setup script
-  block:
-    - name: Download and run NodeSource setup script
-      shell: |
-        curl -fsSL https://deb.nodesource.com/setup_{{ node_version }}.x | bash -
-      args:
-        creates: /etc/apt/sources.list.d/nodesource.list
-      register: setup_script
-      retries: 3
-      delay: 5
-      until: setup_script is succeeded
-
-    - name: Install Node.js
-      apt:
-        name: nodejs
-        state: present
-        update_cache: yes
-
-    - name: Verify Node.js installation
-      command: node --version
-      register: node_version_check
-      changed_when: false
-
-    - name: Verify npm installation
-      command: npm --version
-      register: npm_version_check
-      changed_when: false
-  tags:
-    - install
-    - nodejs
-
-- name: Install global npm tools
-  npm:
-    name: "{{ item }}"
-    global: yes
-  loop: "{{ npm_global_packages }}"
-  tags:
-    - install
-    - nodejs
-
-- name: Install AWS CLI
-  block:
-    - name: Download AWS CLI installer
-      get_url:
-        url: "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
-        dest: "/tmp/awscliv2.zip"
-      tags:
-        - install
-        - awscli
-
-    - name: Unzip AWS CLI installer
-      unarchive:
-        src: "/tmp/awscliv2.zip"
-        dest: "/tmp"
-        remote_src: yes
-      tags:
-        - install
-        - awscli
-
-    - name: Install AWS CLI
-      command: "/tmp/aws/install"
-      args:
-        creates: "/usr/local/bin/aws"
-      tags:
-        - install
-        - awscli
-
-    - name: Verify AWS CLI installation
-      command: "aws --version"
-      register: aws_cli_version
-      changed_when: false
-      tags:
-        - verify
-        - awscli
-
-    - name: Display AWS CLI version
-      debug:
-        msg: "AWS CLI version: {{ aws_cli_version.stdout }}"
-      tags:
-        - verify
-        - awscli
-  tags:
-    - install
-    - awscli
-
-
-- name: Configure firewall
-  block:
-    - name: Allow SSH in UFW
-      ufw:
-        rule: allow
-        port: 22
-        proto: tcp
-
-    - name: Open Jenkins port
-      ufw:
-        rule: allow
-        port: "{{ jenkins_http_port }}"
-        proto: tcp
-  tags:
-    - configure
-    - firewall
-
-- name: Retrieve Jenkins initial admin password
-  command: "cat {{ jenkins_home }}/secrets/initialAdminPassword"
-  register: jenkins_initial_password
-  ignore_errors: yes
-  changed_when: false
-  tags:
-    - info
-    - password
-
-- name: Display Jenkins initial admin password
-  debug:
-    msg: "Jenkins initial admin password is {{ jenkins_initial_password.stdout }}"
-  when: jenkins_initial_password.stdout is defined
-  tags:
-    - info
-    - password
-
-- name: Wait for Jenkins to fully start
-  wait_for:
-    port: "{{ jenkins_http_port }}"
-    timeout: 300
-  tags:
-    - setup
-    - service
-
-
+- name: Verify all installations
+  include_tasks: verify_installations.yml
+  tags: [verify]

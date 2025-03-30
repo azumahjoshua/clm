@@ -1,6 +1,6 @@
 ---
 - name: Configure and Install Jenkins in Single Node Mode
-  hosts: aws_Role_jenkins  
+  hosts: jenkins_jenkins
   become: true  
   remote_user: ubuntu  
 
