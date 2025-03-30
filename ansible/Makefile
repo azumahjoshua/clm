@@ -29,7 +29,7 @@ run:
 
 run-tag:
 		@echo "Running Ansible playbook with tags: $(TAGS)"
-		$(ANSIBLE_PLAYBOOK) plays/jenkins.yml -i inventories/aws_ec2.yml --tags "$(TAGS)"
+		$(ANSIBLE_PLAYBOOK) plays/jenkins.yml --tags "$(TAGS)"
 
 # Help message
 help:

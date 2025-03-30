@@ -1,0 +1,40 @@
+---
+- name: Install Docker
+  block:
+    - name: Add Docker GPG key
+      ansible.builtin.apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        id: 7EA0A9C3F273FCD8
+        state: present
+    
+    - name: Add Docker repo
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+        filename: docker
+    
+    - name: Install Docker packages
+      ansible.builtin.apt:
+        name: "{{ docker_packages }}"
+        state: present
+        update_cache: yes
+    
+    - name: Add jenkins to docker group
+      ansible.builtin.user:
+        name: jenkins
+        groups: docker
+        append: yes
+    
+    - name: Ensure Docker service is started and enabled
+      ansible.builtin.systemd:
+        name: docker
+        state: started
+        enabled: yes
+        daemon_reload: yes
+    
+    - name: Install Docker Compose
+      ansible.builtin.get_url:
+        url: https://github.com/docker/compose/releases/download/v2.23.0/docker-compose-linux-x86_64
+        dest: /usr/local/bin/docker-compose
+        mode: '0755'
+  tags: [docker, install]
