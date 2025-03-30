@@ -1,16 +1,6 @@
 pipeline {
     agent any
 
-    // environment {
-    //     DB_CONNECTION = 'pgsql'
-    //     DB_HOST = 'dpg-cv1doh56l47c73fd037g-a.oregon-postgres.render.com'
-    //     DB_PORT = '5432'
-    //     DB_DATABASE = 'laravel_db_mx96'
-    //     DB_USERNAME = 'laravel_db'
-    //     // DB_PASSWORD = credentials('DB_PASSWORD')
-    //     DB_PASSWORD = 'NdYV7AwLbXC1GQlpIfpggrtLOSREA53J'
-    // }
-
     stages {
         stage('Cleaning Workspace') {
             steps {
@@ -22,7 +12,7 @@ pipeline {
                 checkout scm: [
                     $class: 'GitSCM',
                     branches: [[name: "*/${params.BRANCH_NAME}"]],
-                    userRemoteConfigs: [[url: 'git@github.com:your-repo.git', credentialsId: 'your-credentials-id']]
+                    // userRemoteConfigs: [[url: 'git@github.com:your-repo.git', credentialsId: 'your-credentials-id']]
                 ]
             }
         }
