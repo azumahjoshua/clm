@@ -28,11 +28,11 @@ jobs:
             context: './back-end'
             dockerfile: 'Dockerfile'
             # Include your AWS account alias here
-            image: ${{ env.ECR_REGISTRY }}/${{ secrets.ECR_PUBLIC_ALIAS }}/laravel-backend
+            image: 'public.ecr.aws/${{ secrets.ECR_PUBLIC_ALIAS }}/laravel-backend'
           - component: 'frontend'
             context: './front-end'
             dockerfile: 'Dockerfile'
-            image: ${{ env.ECR_REGISTRY }}/${{ secrets.ECR_PUBLIC_ALIAS }}/nextjs-frontend
+            image: 'public.ecr.aws/${{ secrets.ECR_PUBLIC_ALIAS }}/nextjs-frontend'
       fail-fast: false
 
     steps:
