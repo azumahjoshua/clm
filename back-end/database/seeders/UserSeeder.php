@@ -2,16 +2,18 @@
 
 namespace Database\Seeders;
 
+use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use App\Models\User;  
-use Faker\Factory as Faker;  
+use App\Models\User;
+use Faker\Factory as Faker;
 
 class UserSeeder extends Seeder
 {
-    public function run()
+    
+    public function run(): void
     {
-        $faker = Faker::create();  // Create a Faker instance
-
+        //
+        $faker = Faker::create();
         // Generate 10 fake users
         foreach (range(1, 10) as $index) {
             User::create([

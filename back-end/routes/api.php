@@ -29,4 +29,3 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::apiResource("users", UserController::class);
     });
 });
-
