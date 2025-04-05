@@ -64,6 +64,8 @@ jobs:
           context: ./front-end
           file: ./front-end/Dockerfile
           push: true
+          build-args: |
+            SESSION_PASSWORD=${{ secrets.SESSION_PASSWORD }}
           tags: |
             ${{ env.ECR_REGISTRY }}/${{ secrets.ECR_PUBLIC_ALIAS }}/nextjs-frontend:latest
             ${{ env.ECR_REGISTRY }}/${{ secrets.ECR_PUBLIC_ALIAS }}/nextjs-frontend:${{ github.sha }}
