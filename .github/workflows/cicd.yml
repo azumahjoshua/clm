@@ -20,21 +20,6 @@ jobs:
       contents: read
       packages: write
 
-    strategy:
-      matrix:
-        component: ['backend', 'frontend']
-        include:
-          - component: 'backend'
-            context: './back-end'
-            dockerfile: 'Dockerfile'
-            # Include your AWS account alias here
-            image: 'public.ecr.aws/${{ secrets.ECR_PUBLIC_ALIAS }}/laravel-backend'
-          - component: 'frontend'
-            context: './front-end'
-            dockerfile: 'Dockerfile'
-            image: 'public.ecr.aws/${{ secrets.ECR_PUBLIC_ALIAS }}/nextjs-frontend'
-      fail-fast: false
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -42,7 +27,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          aws-region: ${{ env.AWS_REGION }}  
+          aws-region: ${{ env.AWS_REGION }}
           role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN }}
           role-session-name: github-actions-${{ github.run_id }}
 
@@ -62,13 +47,24 @@ jobs:
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: Build and Push Docker image
+      - name: Build and Push Backend Image
         uses: docker/build-push-action@v4
         with:
-          context: ${{ matrix.context }}
-          file: ${{ matrix.context }}/${{ matrix.dockerfile }}
+          context: ./back-end
+          file: ./back-end/Dockerfile
           push: true
           tags: |
-            ${{ matrix.image }}:latest
-            ${{ matrix.image }}:${{ github.sha }}
+            ${{ env.ECR_REGISTRY }}/${{ secrets.ECR_PUBLIC_ALIAS }}/laravel-backend:latest
+            ${{ env.ECR_REGISTRY }}/${{ secrets.ECR_PUBLIC_ALIAS }}/laravel-backend:${{ github.sha }}
+          platforms: linux/amd64
+
+      - name: Build and Push Frontend Image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./front-end
+          file: ./front-end/Dockerfile
+          push: true
+          tags: |
+            ${{ env.ECR_REGISTRY }}/${{ secrets.ECR_PUBLIC_ALIAS }}/nextjs-frontend:latest
+            ${{ env.ECR_REGISTRY }}/${{ secrets.ECR_PUBLIC_ALIAS }}/nextjs-frontend:${{ github.sha }}
           platforms: linux/amd64
