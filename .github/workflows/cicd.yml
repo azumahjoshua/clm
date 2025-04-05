@@ -1,0 +1,162 @@
+name: Build and Push to ECR Public
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'back-end/**'
+      - 'front-end/**'
+      - '.github/workflows/build-push.yml'
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: public.ecr.aws
+  BACKEND_IMAGE: ${{ env.ECR_REGISTRY }}/${{ secrets.ECR_PUBLIC_ALIAS }}/laravel-backend
+  FRONTEND_IMAGE: ${{ env.ECR_REGISTRY }}/${{ secrets.ECR_PUBLIC_ALIAS }}/nextjs-frontend
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+      packages: write  
+
+    strategy:
+      matrix:
+        component: ['backend', 'frontend']
+        include:
+          - component: 'backend'
+            context: './back-end'
+            dockerfile: 'Dockerfile'  
+            image: ${{ env.BACKEND_IMAGE }}
+          - component: 'frontend'
+            context: './front-end'
+            dockerfile: 'Dockerfile'
+            image: ${{ env.FRONTEND_IMAGE }}
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN }}
+          role-session-name: github-actions-${{ github.run_id }}
+
+      - name: Login to ECR Public
+        run: |
+          aws ecr-public get-login-password --region ${{ env.AWS_REGION }} | \
+          docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build and Push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.context }}/${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ matrix.image }}:latest
+          platforms: linux/amd64
+
+
+
+# name: Build and Push to ECR Public
+
+# on:
+#   push:
+#     branches: [main]
+#     paths:
+#       - 'back-end/**'
+#       - 'front-end/**'
+#       - '.github/workflows/build-push.yml'
+
+# env:
+#   AWS_REGION: us-east-1
+#   ECR_REGISTRY: public.ecr.aws
+#   BACKEND_IMAGE: ${{ env.ECR_REGISTRY }}/${{ secrets.ECR_PUBLIC_ALIAS }}/laravel-backend
+#   FRONTEND_IMAGE: ${{ env.ECR_REGISTRY }}/${{ secrets.ECR_PUBLIC_ALIAS }}/nextjs-frontend
+
+# jobs:
+#   build-and-push:
+#     runs-on: ubuntu-latest
+#     permissions:
+#       id-token: write
+#       contents: read
+#       packages: write  
+
+#     strategy:
+#       matrix:
+#         component: ['backend', 'frontend']
+#         include:
+#           - component: 'backend'
+#             context: './back-end'
+#             dockerfile: 'Dockerfile'  
+#           - component: 'frontend'
+#             context: './front-end'
+#             dockerfile: 'Dockerfile'
+#       fail-fast: false
+
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
+#         with:
+#           fetch-depth: 0  
+
+#       - name: Configure AWS credentials
+#         uses: aws-actions/configure-aws-credentials@v2
+#         with:
+#           aws-region: ${{ env.AWS_REGION }}
+#           role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN }}
+#           role-session-name: github-actions-${{ github.run_id }}
+#           role-duration-seconds: 3600  
+
+#       - name: Login to ECR Public
+#         run: |
+#           echo "Logging in to ECR Public..."
+#           aws ecr-public get-login-password --region ${{ env.AWS_REGION }} | \
+#           docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
+
+#       - name: Setup Docker Buildx
+#         uses: docker/setup-buildx-action@v2
+#         with:
+#           version: latest
+#           driver-opts: |
+#             image=moby/buildkit:master
+#             network=host
+
+#       # - name: Extract metadata
+#       #   id: meta
+#       #   uses: docker/metadata-action@v4
+#       #   with:
+#       #     images: |
+#       #       ${{ matrix.component == 'backend' && env.BACKEND_IMAGE || env.FRONTEND_IMAGE }}
+#       #     tags: |
+#       #       type=sha
+#       #       type=semver,pattern={{version}}
+#       #       type=ref,event=branch
+#       #       type=ref,event=pr
+#       #       type=ref,event=tag
+
+#       - name: Build and push
+#         uses: docker/build-push-action@v4
+#         with:
+#           context: ${{ matrix.context }}
+#           file: ${{ matrix.context }}/${{ matrix.dockerfile }}
+#           push: ${{ github.ref == 'refs/heads/main' }}
+#           tags: ${{ steps.meta.outputs.tags }}
+#           labels: ${{ steps.meta.outputs.labels }}
+#           cache-from: type=gha,scope=${{ github.ref }}-${{ matrix.component }}
+#           cache-to: type=gha,mode=max,scope=${{ github.ref }}-${{ matrix.component }}
+#           platforms: linux/amd64  # Explicit platform target
+
+#       # - name: Vulnerability Scan
+#       #   uses: anchore/sbom-action@v0
+#       #   with:
+#       #     image-ref: ${{ matrix.component == 'backend' && env.BACKEND_IMAGE || env.FRONTEND_IMAGE }}:${{ steps.meta.outputs.version }}
+#       #     format: 'spdx-json'
