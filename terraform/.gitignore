@@ -3,7 +3,7 @@
 *.tfstate.backup
 terraform.tfstate
 terraform.tfstate.backup
-!terraform.tfvars.example  # Keep an example of tfvars for reference
+!terraform.tfvars.example  
 
 # Ignore crash logs
 crash.log
@@ -28,4 +28,5 @@ terraform.tfvars
 # Ignore MacOS system files
 .DS_Store
 
-*.pem
+./clm_key_joshua.pem
+./clm_key.pem
