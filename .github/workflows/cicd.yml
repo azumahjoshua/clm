@@ -10,7 +10,7 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  ECR_REGISTRY: public.ecr.aws  
+  ECR_REGISTRY: public.ecr.aws
 
 jobs:
   build-and-push:
@@ -27,11 +27,12 @@ jobs:
           - component: 'backend'
             context: './back-end'
             dockerfile: 'Dockerfile'
-            image: ${{ env.ECR_REGISTRY }}/laravel-backend  
+            # Include your AWS account alias here
+            image: ${{ env.ECR_REGISTRY }}/${{ secrets.ECR_PUBLIC_ALIAS }}/laravel-backend
           - component: 'frontend'
             context: './front-end'
             dockerfile: 'Dockerfile'
-            image: ${{ env.ECR_REGISTRY }}/nextjs-frontend  
+            image: ${{ env.ECR_REGISTRY }}/${{ secrets.ECR_PUBLIC_ALIAS }}/nextjs-frontend
       fail-fast: false
 
     steps:
@@ -41,15 +42,20 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ${{ env.AWS_REGION }}  
           role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN }}
           role-session-name: github-actions-${{ github.run_id }}
 
       - name: Verify AWS credentials
-        run: aws sts get-caller-identity
+        run: |
+          echo "AWS caller identity:"
+          aws sts get-caller-identity
+          echo "ECR Public repositories:"
+          aws ecr-public describe-repositories --region ${{ env.AWS_REGION }}
 
       - name: Login to ECR Public
         run: |
+          echo "Logging in to ECR Public..."
           aws ecr-public get-login-password --region ${{ env.AWS_REGION }} | \
           docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
 
