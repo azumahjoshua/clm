@@ -10,9 +10,7 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  ECR_REGISTRY: public.ecr.aws
-  BACKEND_IMAGE: ${{ env.ECR_REGISTRY }}/${{ secrets.ECR_PUBLIC_ALIAS }}/laravel-backend
-  FRONTEND_IMAGE: ${{ env.ECR_REGISTRY }}/${{ secrets.ECR_PUBLIC_ALIAS }}/nextjs-frontend
+  ECR_REGISTRY: public.ecr.aws  
 
 jobs:
   build-and-push:
@@ -29,11 +27,11 @@ jobs:
           - component: 'backend'
             context: './back-end'
             dockerfile: 'Dockerfile'
-            image: ${{ env.BACKEND_IMAGE }}
+            image: ${{ env.ECR_REGISTRY }}/laravel-backend  
           - component: 'frontend'
             context: './front-end'
             dockerfile: 'Dockerfile'
-            image: ${{ env.FRONTEND_IMAGE }}
+            image: ${{ env.ECR_REGISTRY }}/nextjs-frontend  
       fail-fast: false
 
     steps:
@@ -48,18 +46,12 @@ jobs:
           role-session-name: github-actions-${{ github.run_id }}
 
       - name: Verify AWS credentials
-        run: |
-          echo "Verifying AWS credentials..."
-          aws sts get-caller-identity
-          echo "AWS credentials verification complete."
+        run: aws sts get-caller-identity
 
       - name: Login to ECR Public
         run: |
-          echo "Logging in to ECR Public..."
           aws ecr-public get-login-password --region ${{ env.AWS_REGION }} | \
-          docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }} || \
-          (echo "ECR Public login failed" && exit 1)
-          echo "Successfully logged in to ECR Public"
+          docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v2
