@@ -95,6 +95,7 @@ The backend will be available at **http://127.0.0.1:8000**.
 
 The frontend will be available at **http://localhost:3000**
 
+# Dockerize Both Backend and Frontend
 
 <!-- git checkout -b ansible-setup
 git add ansible/
@@ -130,3 +131,4 @@ git checkout -b jenkins-pipeline
 git add Jenkinsfile Jenkinsfile_old
 git commit -m "Initialize Jenkins pipeline"
 git push origin jenkins-pipeline -->
+
