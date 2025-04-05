@@ -3,6 +3,7 @@ FROM php:8.3-cli AS builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
     git \
     libpng-dev libjpeg-dev libfreetype6-dev \
     zip unzip libzip-dev \
