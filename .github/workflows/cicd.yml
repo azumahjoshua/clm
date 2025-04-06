@@ -125,6 +125,7 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.CLM_KEY_JOSHUA }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
+          touch ~/.ssh/known_hosts
           ssh-keyscan -H ${{ secrets.JUMP_HOST }} >> ~/.ssh/known_hosts
 
       - name: Start SSH Agent and add key
