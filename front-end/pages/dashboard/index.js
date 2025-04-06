@@ -1,12 +1,11 @@
 import Layout from "@/components/layouts/internal";
 import Breadcrumb from "@/components/breadcrumb";
-import withSession from "@/lib/session";
+import { withSessionSsr } from "@/lib/session";
 import auth from "@/lib/middleware";
 import {AppContext} from "@/components/context";
 import Head from "next/head";
 
-
-export const getServerSideProps = withSession(auth);
+export const getServerSideProps = withSessionSsr(auth);
 
 
 

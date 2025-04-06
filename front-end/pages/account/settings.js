@@ -1,18 +1,17 @@
 import Layout from "@/components/layouts/internal";
 import Breadcrumb from "@/components/breadcrumb";
 import Link from "next/link";
-import withSession from "@/lib/session";
+import { withSessionSsr } from "@/lib/session"; // Updated import
 import auth from "@/lib/middleware";
 import {AppContext} from "@/components/context";
 import {useEffect, useState} from "react";
 import SettingsForm from "@/components/users/settings-form";
 import PasswordForm from "@/components/users/password-form";
 
-
-export const getServerSideProps = withSession(auth);
+// Updated to use withSessionSsr
+export const getServerSideProps = withSessionSsr(auth);
 
 export default function AccountSettings(props) {
-
     return (
         <AppContext.Provider value={props.configBundle}>
             <Layout location="account">
