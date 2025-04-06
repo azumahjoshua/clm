@@ -1,4 +1,4 @@
-name: Build and Push to ECR Public
+name: Build, Push to ECR Public, and Deploy
 
 on:
   push:
@@ -12,6 +12,7 @@ env:
   AWS_REGION: us-east-1
   ECR_REGISTRY: public.ecr.aws
   REPO_RETENTION_DAYS: 30
+  DB_PORT: 5432
 
 jobs:
   build-and-push:
@@ -32,42 +33,23 @@ jobs:
           role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN }}
           role-session-name: github-actions-${{ github.run_id }}
 
-      - name: Verify AWS credentials
-        run: |
-          echo "AWS caller identity:"
-          aws sts get-caller-identity
-          echo "ECR Public repositories:"
-          aws ecr-public describe-repositories --region ${{ env.AWS_REGION }}
-
       - name: Login to ECR Public
         run: |
-          echo "Logging in to ECR Public..."
           aws ecr-public get-login-password --region ${{ env.AWS_REGION }} | \
           docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
 
-      - name: Clean up old Docker artifacts from ECR
-        shell: bash
+      - name: Clean up old Docker images
         run: |
-          echo "Listing all public repositories..."
-          aws ecr-public describe-repositories --region ${{ env.AWS_REGION }}
-
           RETENTION_DATE=$(date -d "-${REPO_RETENTION_DAYS} days" +%Y-%m-%dT%H:%M:%SZ)
-
           for repo in laravel-backend nextjs-frontend; do
-            echo "Cleaning up old images in $repo..."
-            digests=$(aws ecr-public describe-images \
+            aws ecr-public batch-delete-image \
               --repository-name $repo \
               --region ${{ env.AWS_REGION }} \
-              --query "imageDetails[?imagePushedAt<'$RETENTION_DATE'].imageDigest" \
-              --output text)
-
-            for digest in $digests; do
-              echo "Deleting image with digest: $digest"
-              aws ecr-public batch-delete-image \
+              --image-ids "$(aws ecr-public describe-images \
                 --repository-name $repo \
                 --region ${{ env.AWS_REGION }} \
-                --image-ids imageDigest=$digest || true
-            done
+                --query "imageDetails[?imagePushedAt<'$RETENTION_DATE'].imageDigest" \
+                --output json | jq -r 'map({imageDigest: .})')" || true
           done
 
       - name: Setup Docker Buildx
@@ -91,12 +73,12 @@ jobs:
           file: ./front-end/Dockerfile
           push: true
           build-args: |
-            SESSION_PASSWORD=${{ secrets.SESSION_PASSWORD }}
+            NEXT_PUBLIC_API_URL=http://${{ secrets.ALB_DNS }}/api
           tags: |
             ${{ env.ECR_REGISTRY }}/${{ secrets.ECR_PUBLIC_ALIAS }}/nextjs-frontend:latest
             ${{ env.ECR_REGISTRY }}/${{ secrets.ECR_PUBLIC_ALIAS }}/nextjs-frontend:${{ github.sha }}
           platforms: linux/amd64
-  
+
   deploy-to-ec2:
     needs: build-and-push
     runs-on: ubuntu-latest
@@ -115,26 +97,49 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
           role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN }}
           role-session-name: github-actions-${{ github.run_id }}
-          audience: sts.amazonaws.com
-      
-      - name: Verify AWS access
-        run: aws sts get-caller-identity
 
-      - name: Setup SSH key and known_hosts
+      - name: Prepare deployment files
+        run: |
+          # Create production .env file
+          cat > .env <<EOL
+          ECR_PUBLIC_ALIAS=${{ secrets.ECR_PUBLIC_ALIAS }}
+          TAG=${{ github.sha }}
+          ALB_DNS=${{ secrets.ALB_DNS }}
+          DB_HOST=${{ secrets.DB_HOST }}
+          DB_PORT=${{ env.DB_PORT }}
+          DB_DATABASE=${{ secrets.DB_DATABASE }}
+          DB_USERNAME=${{ secrets.DB_USERNAME }}
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          EOL
+
+          # Prepare docker-compose.yml
+          cp docker-compose.prod.yml docker-compose.yml
+          sed -i "s/\${ECR_PUBLIC_ALIAS}/${{ secrets.ECR_PUBLIC_ALIAS }}/g" docker-compose.yml
+          sed -i "s/\${TAG}/${{ github.sha }}/g" docker-compose.yml
+          sed -i "s/\${ALB_DNS}/${{ secrets.ALB_DNS }}/g" docker-compose.yml
+
+      - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.CLM_KEY_JOSHUA }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          touch ~/.ssh/known_hosts
-          ssh-keyscan -H ${{ secrets.JUMP_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan ${{ secrets.JUMP_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Start SSH Agent and add key
+      - name: Copy deployment files
         run: |
-          eval "$(ssh-agent -s)"
-          ssh-add ~/.ssh/id_rsa
+          scp -o StrictHostKeyChecking=no \
+            -o ProxyCommand="ssh -W %h:%p ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }}" \
+            docker-compose.yml \
+            .env \
+            ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }}:/home/ubuntu/app/
 
-      - name: Test SSH connection via Jump Host
+      - name: Deploy application
         run: |
-          ssh -o StrictHostKeyChecking=no -A \
+          ssh -o StrictHostKeyChecking=no \
             -J ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }} \
-            ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }} "echo 'Connected to private EC2 via jump host!'"
+            ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }} \
+            "cd /home/ubuntu/app && \
+            docker compose pull && \
+            docker compose down --remove-orphans && \
+            docker compose up -d && \
+            docker system prune -af"
