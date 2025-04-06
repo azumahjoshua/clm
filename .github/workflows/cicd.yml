@@ -48,12 +48,15 @@ jobs:
       - name: Clean up old Docker artifacts from ECR
         shell: bash
         run: |
+          echo "Listing all public repositories..."
+          aws ecr-public describe-repositories --region ${{ env.AWS_REGION }}
+
           RETENTION_DATE=$(date -d "-${REPO_RETENTION_DAYS} days" +%Y-%m-%dT%H:%M:%SZ)
 
           for repo in laravel-backend nextjs-frontend; do
             echo "Cleaning up old images in $repo..."
             digests=$(aws ecr-public describe-images \
-              --repository-name ${{ secrets.ECR_PUBLIC_ALIAS }}/$repo \
+              --repository-name $repo \
               --region ${{ env.AWS_REGION }} \
               --query "imageDetails[?imagePushedAt<'$RETENTION_DATE'].imageDigest" \
               --output text)
@@ -61,7 +64,7 @@ jobs:
             for digest in $digests; do
               echo "Deleting image with digest: $digest"
               aws ecr-public batch-delete-image \
-                --repository-name ${{ secrets.ECR_PUBLIC_ALIAS }}/$repo \
+                --repository-name $repo \
                 --region ${{ env.AWS_REGION }} \
                 --image-ids imageDigest=$digest || true
             done
