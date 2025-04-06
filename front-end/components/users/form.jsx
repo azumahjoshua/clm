@@ -1,112 +1,124 @@
-import { useContext, useEffect, useState } from "react";
+import {useContext, useEffect, useState, useCallback} from "react";
 import FormError from "@/components/form-error";
 import Link from "next/link";
 import axios from "axios";
-import { AppContext } from "@/components/context";
-import { errorAlert, successAlert } from "@/lib/alerts";
+import {AppContext} from "@/components/context";
+import {errorAlert, successAlert} from "@/lib/alerts";
 
 export default function Form(props) {
     const config = useContext(AppContext);
-
     const [formData, setFormData] = useState({
-        username: "",
-        first_name: "",
-        last_name: "",
-        email: "",
         phone: "",
+        email: "",
+        username: "",
+        firstname: "",
+        lastname: ""
     });
-
     const [errors, setErrors] = useState({});
     const [isProcessing, setIsProcessing] = useState(false);
 
-    const resetData = () => {
+    const resetData = useCallback(() => {
         setFormData({
             username: "",
-            first_name: "",
-            last_name: "",
+            firstname: "",
+            lastname: "",
             email: "",
-            phone: "",
+            phone: ""
         });
-    };
+    }, []);
 
-    const initData = (data) => {
+    const initData = useCallback((data) => {
         setFormData({
-            username: data.username,
-            first_name: data.first_name,
-            last_name: data.last_name,
-            email: data.email,
-            phone: data.phone,
+            username: data.username || "",
+            firstname: data.first_name || "",
+            lastname: data.last_name || "",
+            email: data.email || "",
+            phone: data.phone || ""
         });
-    };
+    }, []);
 
-    const handleError = (err) => {
+    const handleError = useCallback((err) => {
         let message = "Oops! Something went wrong";
-        if (err.response && err.response.status === 422) {
-            setErrors(err.response.data.errors);
+        if (err.response?.status === 422) {
+            setErrors(err.response.data.errors || {});
+            message = err.response.data.message || message;
+        } else if (err.response?.data?.message) {
             message = err.response.data.message;
         }
 
-        if (err.response) {
-            message = err.response.data.message ?? "Oops! Something went wrong";
-        }
-
         console.error(err);
-        errorAlert("Oops! ", message);
-    };
+        errorAlert("Error", message);
+    }, []);
 
-    const processData = async () => {
+    const processStore = useCallback(async (data) => {
+        try {
+            const response = await axios.post(`${config.backendUrl}/admin/users`, data, {
+                headers: {
+                    ...config.authHeader,
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+            if (response.status === 201) {
+                successAlert();
+                resetData();
+            }
+        } catch (err) {
+            handleError(err);
+            throw err;
+        }
+    }, [config, resetData, handleError]);
+
+    const processUpdate = useCallback(async (data) => {
+        try {
+            const response = await axios.patch(
+                `${config.backendUrl}/users/${props.initData.id}`, 
+                data,
+                { headers: config.authHeader }
+            );
+            if (response.status === 200) {
+                successAlert("Success!", "Operation was successful!");
+            }
+        } catch (err) {
+            handleError(err);
+            throw err;
+        }
+    }, [config, props.initData?.id, handleError]);
+
+    const processData = useCallback(async () => {
         setIsProcessing(true);
         setErrors({});
 
         try {
             const data = {
                 username: formData.username,
-                first_name: formData.first_name,
-                last_name: formData.last_name,
+                first_name: formData.firstname,
+                last_name: formData.lastname,
                 email: formData.email,
                 phone: formData.phone,
             };
 
-            props.initData ? await processUpdate(data) : await processStore(data);
+            if (props.initData) {
+                await processUpdate(data);
+            } else {
+                await processStore(data);
+            }
         } catch (err) {
-            handleError(err);
+            // Error already handled in processStore/processUpdate
+        } finally {
+            setIsProcessing(false);
         }
-
-        setIsProcessing(false);
-    };
-
-    const processStore = async (formData) => {
-        const response = await axios.post(`${config.backendUrl}/admin/users`, formData, {
-            headers: { ...config.authHeader, "Content-Type": "multipart/form-data" },
-        });
-
-        if (response.status === 201) {
-            successAlert("Success!", "User created successfully!");
-            resetData();
-        }
-    };
-
-    const processUpdate = async (formData) => {
-        const response = await axios.patch(`${config.backendUrl}/users/${props.initData.id}`, formData, {
-            headers: { ...config.authHeader },
-        });
-
-        if (response.status === 200) {
-            successAlert("Success!", "User updated successfully!");
-        }
-    };
+    }, [formData, props.initData, processStore, processUpdate]);
 
     useEffect(() => {
         if (props.initData) {
             initData(props.initData);
         }
-    }, [props.initData]); // Add props.initData as a dependency
+    }, [props.initData, initData]);
 
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({
+    const handleInputChange = (field) => (e) => {
+        setFormData(prev => ({
             ...prev,
-            [name]: value,
+            [field]: e.target.value
         }));
     };
 
@@ -114,24 +126,23 @@ export default function Form(props) {
         <>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 my-4">
                 <div>
-                    <form>
+                    <form onSubmit={(e) => e.preventDefault()}>
                         <label className="form-control">
                             <div className="label">
                                 <span className="label-text">Username</span>
                             </div>
                             <input
                                 type="text"
-                                name="username"
-                                className={`input input-bordered flex items-center gap-2 ${errors.username && "input-error"}`}
+                                className={`input input-bordered flex items-center gap-2 ${errors.username && 'input-error'}`}
                                 value={formData.username}
-                                onChange={handleChange}
+                                onChange={handleInputChange('username')}
                                 placeholder="Type username"
                                 required
                             />
-                            <FormError error={errors.username} />
+                            <FormError error={errors.username}/>
                         </label>
                         <div className="my-2">
-                            <hr />
+                            <hr/>
                         </div>
                         <label className="form-control">
                             <div className="label">
@@ -139,14 +150,13 @@ export default function Form(props) {
                             </div>
                             <input
                                 type="text"
-                                name="first_name"
-                                className={`input input-bordered flex items-center gap-2 ${errors.first_name && "input-error"}`}
-                                value={formData.first_name}
-                                onChange={handleChange}
+                                className={`input input-bordered flex items-center gap-2 ${errors.first_name && 'input-error'}`}
+                                value={formData.firstname}
+                                onChange={handleInputChange('firstname')}
                                 placeholder="Type first name"
                                 required
                             />
-                            <FormError error={errors.first_name} />
+                            <FormError error={errors.first_name}/>
                         </label>
                         <label className="form-control">
                             <div className="label">
@@ -154,14 +164,13 @@ export default function Form(props) {
                             </div>
                             <input
                                 type="text"
-                                name="last_name"
-                                className={`input input-bordered flex items-center gap-2 ${errors.last_name && "input-error"}`}
-                                value={formData.last_name}
-                                onChange={handleChange}
+                                className={`input input-bordered flex items-center gap-2 ${errors.last_name && 'input-error'}`}
+                                value={formData.lastname}
+                                onChange={handleInputChange('lastname')}
                                 placeholder="Type last name"
                                 required
                             />
-                            <FormError error={errors.last_name} />
+                            <FormError error={errors.last_name}/>
                         </label>
                         <label className="form-control">
                             <div className="label">
@@ -169,14 +178,13 @@ export default function Form(props) {
                             </div>
                             <input
                                 type="email"
-                                name="email"
-                                className={`input input-bordered flex items-center gap-2 ${errors.email && "input-error"}`}
+                                className={`input input-bordered flex items-center gap-2 ${errors.email && 'input-error'}`}
                                 value={formData.email}
-                                onChange={handleChange}
+                                onChange={handleInputChange('email')}
                                 placeholder="Type email address"
                                 required
                             />
-                            <FormError error={errors.email} />
+                            <FormError error={errors.email}/>
                         </label>
                         <label className="form-control">
                             <div className="label">
@@ -184,20 +192,23 @@ export default function Form(props) {
                             </div>
                             <input
                                 type="text"
-                                name="phone"
-                                className={`input input-bordered flex items-center gap-2 ${errors.phone && "input-error"}`}
+                                className={`input input-bordered flex items-center gap-2 ${errors.phone && 'input-error'}`}
                                 value={formData.phone}
-                                onChange={handleChange}
+                                onChange={handleInputChange('phone')}
                                 placeholder="Type phone number"
                                 required
                             />
-                            <FormError error={errors.phone} />
+                            <FormError error={errors.phone}/>
                         </label>
                     </form>
                 </div>
             </div>
             <div className="my-4 gap-2 flex">
-                <button className="btn btn-primary" onClick={processData} disabled={isProcessing}>
+                <button 
+                    className="btn btn-primary" 
+                    onClick={processData}
+                    disabled={isProcessing}
+                >
                     {isProcessing && <span className="loading loading-spinner loading-md"></span>}
                     Save
                 </button>
@@ -206,5 +217,5 @@ export default function Form(props) {
                 </Link>
             </div>
         </>
-    );
+    )
 }
