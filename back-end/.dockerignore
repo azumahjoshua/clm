@@ -1,0 +1,52 @@
+# Ignore vendor to force fresh install in Docker
+/vendor
+
+# Laravel cache and storage
+/storage/*.key
+/storage/app/*
+!/storage/app/public
+/storage/debugbar
+/storage/framework/cache
+/storage/framework/sessions
+/storage/framework/views
+/storage/logs
+
+# Node stuff (if using Laravel Mix/Vite)
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Compiled frontend assets
+/public/hot
+/public/storage
+/public/js
+/public/css
+/public/mix-manifest.json
+
+# Env and config
+.env
+.env.*.local
+
+# IDE and system files
+.idea
+.vscode
+.DS_Store
+*.swp
+*.swo
+
+# Tests and coverage
+.phpunit.result.cache
+tests
+coverage
+*.log
+
+# Git
+.git
+.gitignore
+
+# Docker (optional)
+docker-compose*
+Dockerfile*
+
+# Mac/Windows stuff
+Thumbs.db
