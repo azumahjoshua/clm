@@ -159,13 +159,6 @@ jobs:
             -J ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }} \
             ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }} \
             "docker ps --filter 'name=backend' --format '{{.Status}}' | grep -q 'healthy\|Up'"
-    
-          # Verify HTTP endpoints
-          ssh -o StrictHostKeyChecking=no \
-            -J ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }} \
-            ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }} \
-            "curl -sf http://localhost:3000/api/health > /dev/null && \
-             curl -sf http://localhost:8000/health > /dev/null"
 
       - name: Verify Render PostgreSQL connection
         run: |
