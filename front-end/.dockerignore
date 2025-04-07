@@ -1,3 +1,38 @@
-# .env
-# .env.dev
-# .env.prod
+# Node modules should not be copied from host
+node_modules
+.next
+out
+dist
+
+# Logs and debug info
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Local env files (if you want to handle them differently)
+.env
+.env.*.local
+
+# Editor and system files
+.vscode
+.idea
+.DS_Store
+*.swp
+*.swo
+
+# Test and coverage
+coverage
+__tests__
+*.test.js
+*.spec.js
+*.test.ts
+*.spec.ts
+
+# Git files
+.git
+.gitignore
+
+# Docker files (optional)
+Dockerfile
+docker-compose*
+
