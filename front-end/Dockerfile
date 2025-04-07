@@ -1,5 +1,5 @@
 # Stage 1: Build the application
-FROM node:20-alpine AS builder
+FROM node:18-alpine AS builder
 
 WORKDIR /app
 
@@ -15,15 +15,19 @@ RUN npm run build
 RUN npm prune --production
 
 # Stage 2: Production image
-FROM node:20-alpine
+FROM node:18-alpine
 
 WORKDIR /app
 
 # Copy essential files from builder stage
 COPY --from=builder /app/package.json ./
+COPY --from=builder /app/package-lock.json ./
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/node_modules ./node_modules
+
+# Ensure production dependencies are intact (optional if needed)
+RUN npm install --production --legacy-peer-deps
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
