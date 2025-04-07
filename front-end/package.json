@@ -5,8 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "node -e \"require('next/dist/bin/next').start()\"",
-    "postinstall": "echo 'Next.js verified'",  
+    "start": "next start",
+    "postinstall": "echo 'Next.js verified'",   
     "lint": "next lint"
   },
   "dependencies": {
