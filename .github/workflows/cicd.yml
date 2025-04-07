@@ -13,7 +13,7 @@ env:
   ECR_REGISTRY: public.ecr.aws
   REPO_RETENTION_DAYS: 30
   DB_PORT: 5432
-  DB_CONNECTION: pgsq
+  DB_CONNECTION: pgsql
 
 jobs:
   build-and-push:
@@ -145,3 +145,32 @@ jobs:
             docker compose down --remove-orphans && \
             docker compose up -d && \
             docker system prune -af"
+      
+      - name: Verify containers are healthy
+        run: |
+          # Check frontend container
+          ssh -o StrictHostKeyChecking=no \
+            -J ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }} \
+            ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }} \
+            "docker ps --filter 'name=frontend' --format '{{.Status}}' | grep -q 'healthy\|Up'"
+    
+          # Check backend container
+          ssh -o StrictHostKeyChecking=no \
+            -J ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }} \
+            ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }} \
+            "docker ps --filter 'name=backend' --format '{{.Status}}' | grep -q 'healthy\|Up'"
+    
+          # Verify HTTP endpoints
+          ssh -o StrictHostKeyChecking=no \
+            -J ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }} \
+            ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }} \
+            "curl -sf http://localhost:3000/api/health > /dev/null && \
+             curl -sf http://localhost:8000/health > /dev/null"
+
+      - name: Verify Render PostgreSQL connection
+        run: |
+          ssh -o StrictHostKeyChecking=no \
+            -J ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }} \
+            ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }} \
+            "docker compose exec backend \
+            pg_isready -h ${{ secrets.DB_HOST }} -p ${{ secrets.DB_PORT || env.DB_PORT }} -U ${{ secrets.DB_USERNAME }} -d ${{ secrets.DB_DATABASE }}"
