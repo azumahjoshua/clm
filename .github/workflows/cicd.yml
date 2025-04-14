@@ -106,24 +106,35 @@ jobs:
 
       - name: Prepare deployment files
         run: |
-          # Create production .env file
-          cat > .env <<EOL
-          ECR_PUBLIC_ALIAS=${{ secrets.ECR_PUBLIC_ALIAS }}
-          TAG=${{ github.sha }}
-          ALB_DNS=${{ secrets.ALB_DNS }}
-          DB_CONNECTION=${{ env.DB_CONNECTION}}
-          DB_HOST=${{ secrets.DB_HOST }}
-          DB_PORT=${{ env.DB_PORT }}
-          DB_DATABASE=${{ secrets.DB_DATABASE }}
-          DB_USERNAME=${{ secrets.DB_USERNAME }}
-          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-          EOL
+          # Create backend .env file
+          mkdir -p back-end
+          cp back-end/env.example back-end/.env
+          sed -i "s/APP_ENV=.*/APP_ENV=production/" back-end/.env
+          sed -i "s/APP_DEBUG=.*/APP_DEBUG=false/" back-end/.env
+          sed -i "s|APP_URL=.*|APP_URL=https://${{ secrets.ALB_DNS }}|" back-end/.env
+          sed -i "s/DB_CONNECTION=.*/DB_CONNECTION=${{ env.DB_CONNECTION }}/" back-end/.env
+          sed -i "s/DB_HOST=.*/DB_HOST=${{ secrets.DB_HOST }}/" back-end/.env
+          sed -i "s/DB_PORT=.*/DB_PORT=${{ env.DB_PORT }}/" back-end/.env
+          sed -i "s/DB_DATABASE=.*/DB_DATABASE=${{ secrets.DB_DATABASE }}/" back-end/.env
+          sed -i "s/DB_USERNAME=.*/DB_USERNAME=${{ secrets.DB_USERNAME }}/" back-end/.env
+          sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=${{ secrets.DB_PASSWORD }}/" back-end/.env
+          
+          # Create frontend .env file if needed
+          mkdir -p front-end
+          if [ -f "front-end/env.example" ]; then
+            cp front-end/env.example front-end/.env
+            sed -i "s|NEXT_PUBLIC_API_URL=.*|NEXT_PUBLIC_API_URL=https://${{ secrets.ALB_DNS }}/api|" front-end/.env
+          fi
 
           # Prepare docker-compose.yml
-          cp docker-compose.prod.yml docker-compose.yml
-          sed -i "s/\${ECR_PUBLIC_ALIAS}/${{ secrets.ECR_PUBLIC_ALIAS }}/g" docker-compose.yml
-          sed -i "s/\${TAG}/${{ github.sha }}/g" docker-compose.yml
-          sed -i "s/\${ALB_DNS}/${{ secrets.ALB_DNS }}/g" docker-compose.yml
+          sed \
+            -e "s/\${ECR_PUBLIC_ALIAS}/${{ secrets.ECR_PUBLIC_ALIAS }}/g" \
+            -e "s/\${TAG}/${{ github.sha }}/g" \
+            -e "s/\${ALB_DNS}/${{ secrets.ALB_DNS }}/g" \
+            docker-compose.prod.yml > docker-compose.yml
+
+          # Copy deploy script
+          cp scripts/deploy-prod.sh .
 
       - name: Setup SSH
         run: |
@@ -137,38 +148,21 @@ jobs:
           scp -o StrictHostKeyChecking=no \
             -o ProxyCommand="ssh -W %h:%p ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }}" \
             docker-compose.yml \
-            .env \
+            back-end/.env \
+            front-end/.env \
+            deploy-prod.sh \
             ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }}:/home/ubuntu/app/
 
-      - name: Deploy application
+      - name: Make deploy script executable
         run: |
           ssh -o StrictHostKeyChecking=no \
             -J ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }} \
             ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }} \
-            "cd /home/ubuntu/app && \
-            docker compose pull && \
-            docker compose down --remove-orphans && \
-            docker compose up -d && \
-            docker system prune -af"
-      
-      - name: Verify containers are healthy
-        run: |
-          # Check frontend container
-          ssh -o StrictHostKeyChecking=no \
-            -J ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }} \
-            ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }} \
-            "docker ps --filter 'name=frontend' --format '{{.Status}}' | grep -q 'healthy\|Up'"
-    
-          # Check backend container
-          ssh -o StrictHostKeyChecking=no \
-            -J ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }} \
-            ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }} \
-            "docker ps --filter 'name=backend' --format '{{.Status}}' | grep -q 'healthy\|Up'"
+            "chmod +x /home/ubuntu/app/deploy-prod.sh"
 
-      - name: Verify Render PostgreSQL connection
+      - name: Run deployment
         run: |
           ssh -o StrictHostKeyChecking=no \
             -J ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }} \
             ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }} \
-            "docker compose exec backend \
-            pg_isready -h ${{ secrets.DB_HOST }} -p ${{ secrets.DB_PORT || env.DB_PORT }} -U ${{ secrets.DB_USERNAME }} -d ${{ secrets.DB_DATABASE }}"
+            "cd /home/ubuntu/app && ./deploy-prod.sh"
