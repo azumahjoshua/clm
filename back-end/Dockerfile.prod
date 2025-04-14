@@ -1,20 +1,27 @@
-FROM php:8.3-fpm-alpine
+# Production Dockerfile (updated to match development)
+FROM php:8.3-cli
 
-RUN apk add --no-cache \
-    postgresql-dev \
-    libzip-dev \
-    libpng-dev \
-    libjpeg-turbo-dev \
-    freetype-dev \
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    postgresql-client \
+    netcat-traditional \
+    libpng-dev libjpeg-dev libfreetype6-dev \
+    zip unzip libzip-dev \
+    libpq-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo pdo_pgsql gd zip bcmath opcache
+    && docker-php-ext-install -j$(nproc) gd zip pdo_pgsql pgsql exif \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
+# Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www
 
+# Copy application files
 COPY . .
 
+# Install dependencies
 RUN composer install --no-dev --optimize-autoloader \
     && chown -R www-data:www-data storage bootstrap/cache
 
