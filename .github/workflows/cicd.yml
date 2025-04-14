@@ -14,6 +14,7 @@ env:
   REPO_RETENTION_DAYS: 30
   DB_PORT: 5432
   DB_CONNECTION: pgsql
+  COMPOSE_PROJECT_NAME: clm-prod
 
 jobs:
   build-and-push:
@@ -60,25 +61,29 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: ./back-end
-          file: ./back-end/Dockerfile
+          file: ./back-end/Dockerfile.prod
           push: true
           tags: |
             ${{ env.ECR_REGISTRY }}/${{ secrets.ECR_PUBLIC_ALIAS }}/laravel-backend:latest
             ${{ env.ECR_REGISTRY }}/${{ secrets.ECR_PUBLIC_ALIAS }}/laravel-backend:${{ github.sha }}
           platforms: linux/amd64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Build and Push Frontend Image
         uses: docker/build-push-action@v4
         with:
           context: ./front-end
-          file: ./front-end/Dockerfile
+          file: ./front-end/Dockerfile.prod
           push: true
           build-args: |
-            NEXT_PUBLIC_API_URL=http://${{ secrets.ALB_DNS }}/api
+            NEXT_PUBLIC_API_URL=https://${{ secrets.ALB_DNS }}/api
           tags: |
             ${{ env.ECR_REGISTRY }}/${{ secrets.ECR_PUBLIC_ALIAS }}/nextjs-frontend:latest
             ${{ env.ECR_REGISTRY }}/${{ secrets.ECR_PUBLIC_ALIAS }}/nextjs-frontend:${{ github.sha }}
           platforms: linux/amd64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   deploy-to-ec2:
     needs: build-and-push
