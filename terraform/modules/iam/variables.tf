@@ -1,5 +1,20 @@
 variable "name" {
-  description = "Name prefix for IAM resources"
+  description = "Base name for resources"
   type        = string
-  default     = "jenkins" 
+}
+
+variable "github_org" {
+  description = "GitHub organization name"
+  type        = string
+}
+
+variable "github_repo" {
+  description = "GitHub repository name (format: org/repo)"
+  type        = string
+}
+
+variable "tags" {
+  description = "Common tags for all resources"
+  type        = map(string)
+  default     = {}
 }

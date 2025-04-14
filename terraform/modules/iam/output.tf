@@ -1,14 +1,19 @@
-output "jenkins_profile_name" {
-  description = "The name of the Jenkins instance profile"
-  value       = aws_iam_instance_profile.jenkins_profile.name
+output "github_actions_role_arn" {
+  description = "ARN of the IAM role for GitHub Actions"
+  value       = aws_iam_role.github_actions_role.arn
 }
 
-output "jenkins_profile_arn" {
-  description = "The ARN of the Jenkins instance profile"
-  value       = aws_iam_instance_profile.jenkins_profile.arn
+output "github_actions_role_name" {
+  description = "Name of the IAM role for GitHub Actions"
+  value       = aws_iam_role.github_actions_role.name
 }
 
-output "jenkins_role_name" {
-  description = "The name of the Jenkins IAM role"
-  value       = aws_iam_role.jenkins.name
+output "instance_profile_arn" {
+  description = "ARN of the EC2 instance profile"
+  value       = aws_iam_instance_profile.github_actions_profile.arn
+}
+
+output "instance_profile_name" {
+  description = "Name of the EC2 instance profile"
+  value       = aws_iam_instance_profile.github_actions_profile.name
 }

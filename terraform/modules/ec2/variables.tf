@@ -28,11 +28,11 @@ variable "key_pair_name" {
 variable "subnet_id" {
   description = "Subnet ID where the instance will be launched"
   type        = string
-}
+}                                      
 
-variable "security_group_id" {
+variable "security_group_ids" {
   description = "Security group ID to attach"
-  type        = string
+  type        = list(string)
 }
 
 variable "enable_public_ip" {
@@ -44,7 +44,7 @@ variable "enable_public_ip" {
 variable "iam_instance_profile" {
   description = "IAM instance profile name to attach"
   type        = string
-  default     = ""
+  default     = null
 }
 
 variable "root_block_device" {
@@ -65,4 +65,10 @@ variable "tags" {
   description = "Additional tags for the instance"
   type        = map(string)
   default     = {}
+}
+
+variable "user_data" {
+  description = "User data script to execute on instance launch"
+  type        = string
+  default     = null
 }

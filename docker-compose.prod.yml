@@ -3,11 +3,12 @@ services:
     image: public.ecr.aws/${ECR_PUBLIC_ALIAS}/laravel-backend:${TAG:-latest}
     container_name: clm-backend
     volumes:
-      - clm-storage:/var/www/html/storage
+      - clm-storage:/var/www/storage
     networks:
       - clm-network
     environment:
       - APP_ENV=production
+      - APP_DEBUG=false
       - APP_URL=http://${ALB_DNS}
       - DB_CONNECTION=${DB_CONNECTION}
       - DB_HOST=${DB_HOST}
@@ -16,6 +17,8 @@ services:
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
     restart: unless-stopped
+    ports:
+      - "8000:8000"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
       interval: 30s
@@ -29,8 +32,10 @@ services:
       - clm-network
     environment:
       - NODE_ENV=production
-      - BACKEND_API_HOST=http://${ALB_DNS}
+      - NEXT_PUBLIC_API_URL=http://${ALB_DNS}/api
     restart: unless-stopped
+    ports:
+      - "3000:3000"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 30s
@@ -44,3 +49,98 @@ volumes:
 networks:
   clm-network:
     driver: bridge
+# services:
+#   backend:
+#     build:
+#       context: ./back-end
+#       dockerfile: Dockerfile
+#     container_name: clm-backend
+#     volumes:
+#       - clm-storage:/var/www/storage
+#       - ./back-end/.env:/var/www/.env
+#       - ./back-end:/var/www  
+#     networks:
+#       - clm-network
+#     environment: 
+#       - APP_ENV=${APP_ENV:-production}
+#       - DB_CONNECTION=${DB_CONNECTION:-pgsql}
+#       - DB_HOST=${DB_HOST}
+#       - DB_PORT=${DB_PORT}
+#       - DB_DATABASE=${DB_DATABASE}
+#       - DB_USERNAME=${DB_USERNAME}
+#       - DB_PASSWORD=${DB_PASSWORD}
+#     restart: unless-stopped
+#     ports:
+#       - "8000:8000"
+
+#   frontend:
+#     build:
+#       context: ./front-end
+#       dockerfile: Dockerfile
+#     container_name: clm-frontend
+#     networks:
+#       - clm-network
+#     env_file:
+#       - ./front-end/.env
+#     restart: unless-stopped
+#     ports:
+#       - "3000:3000"
+#     depends_on:
+#       - backend
+#     volumes:
+#       - ./front-end:/app  
+#       - clm-frontend:/app/node_modules  
+
+# volumes:
+#   clm-storage:
+#   clm-frontend:
+
+# networks:
+#   clm-network:
+#     driver: bridge
+# services:
+#   backend:
+#     image: public.ecr.aws/${ECR_PUBLIC_ALIAS}/laravel-backend:${TAG:-latest}
+#     container_name: clm-backend
+#     volumes:
+#       - clm-storage:/var/www/html/storage
+#     networks:
+#       - clm-network
+#     environment:
+#       - APP_ENV=production
+#       - APP_URL=http://${ALB_DNS}
+#       - DB_CONNECTION=${DB_CONNECTION}
+#       - DB_HOST=${DB_HOST}
+#       - DB_PORT=${DB_PORT}
+#       - DB_DATABASE=${DB_DATABASE}
+#       - DB_USERNAME=${DB_USERNAME}
+#       - DB_PASSWORD=${DB_PASSWORD}
+#     restart: unless-stopped
+#     healthcheck:
+#       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+#       interval: 30s
+#       timeout: 10s
+#       retries: 3
+
+#   frontend:
+#     image: public.ecr.aws/${ECR_PUBLIC_ALIAS}/nextjs-frontend:${TAG:-latest}
+#     container_name: clm-frontend
+#     networks:
+#       - clm-network
+#     environment:
+#       - NODE_ENV=production
+#       - BACKEND_API_HOST=http://${ALB_DNS}
+#     restart: unless-stopped
+#     healthcheck:
+#       test: ["CMD", "curl", "-f", "http://localhost:3000"]
+#       interval: 30s
+#       timeout: 10s
+#       retries: 3
+
+# volumes:
+#   clm-storage:
+#     driver: local
+
+# networks:
+#   clm-network:
+#     driver: bridge

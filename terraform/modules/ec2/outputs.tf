@@ -14,7 +14,7 @@ output "public_ips" {
 output "private_ips" {
   description = "List of private IP addresses of the instances"
   value       = aws_instance.this[*].private_ip
-}
+}     
 
 # Output the IAM instance profile associated with the instances
 output "iam_instance_profiles" {
