@@ -61,7 +61,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: ./back-end
-          file: ./back-end/Dockerfile.prod
+          file: ./back-end/Dockerfile
           push: true
           tags: |
             ${{ env.ECR_REGISTRY }}/${{ secrets.ECR_PUBLIC_ALIAS }}/laravel-backend:latest
@@ -74,7 +74,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: ./front-end
-          file: ./front-end/Dockerfile.prod
+          file: ./front-end/Dockerfile
           push: true
           build-args: |
             NEXT_PUBLIC_API_URL=https://${{ secrets.ALB_DNS }}/api
