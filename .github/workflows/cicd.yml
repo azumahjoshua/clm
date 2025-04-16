@@ -106,34 +106,31 @@ jobs:
 
       - name: Prepare deployment files
         run: |
-          # Create backend .env file
-          mkdir -p back-end
-          cp back-end/env.example back-end/.env
-          sed -i "s/APP_ENV=.*/APP_ENV=production/" back-end/.env
-          sed -i "s/APP_DEBUG=.*/APP_DEBUG=false/" back-end/.env
-          sed -i "s|APP_URL=.*|APP_URL=https://${{ secrets.ALB_DNS }}|" back-end/.env
-          sed -i "s/DB_CONNECTION=.*/DB_CONNECTION=${{ env.DB_CONNECTION }}/" back-end/.env
-          sed -i "s/DB_HOST=.*/DB_HOST=${{ secrets.DB_HOST }}/" back-end/.env
-          sed -i "s/DB_PORT=.*/DB_PORT=${{ env.DB_PORT }}/" back-end/.env
-          sed -i "s/DB_DATABASE=.*/DB_DATABASE=${{ secrets.DB_DATABASE }}/" back-end/.env
-          sed -i "s/DB_USERNAME=.*/DB_USERNAME=${{ secrets.DB_USERNAME }}/" back-end/.env
-          sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=${{ secrets.DB_PASSWORD }}/" back-end/.env
+          mkdir -p deployment/back-end
+          mkdir -p deployment/front-end
           
-          # Create frontend .env file if needed
-          mkdir -p front-end
+          cp back-end/env.example deployment/back-end/.env
+          sed -i "s/APP_ENV=.*/APP_ENV=production/" deployment/back-end/.env
+          sed -i "s/APP_DEBUG=.*/APP_DEBUG=false/" deployment/back-end/.env
+          sed -i "s|APP_URL=.*|APP_URL=https://${{ secrets.ALB_DNS }}|" deployment/back-end/.env
+          sed -i "s/DB_CONNECTION=.*/DB_CONNECTION=${{ env.DB_CONNECTION }}/" deployment/back-end/.env
+          sed -i "s/DB_HOST=.*/DB_HOST=${{ secrets.DB_HOST }}/" deployment/back-end/.env
+          sed -i "s/DB_PORT=.*/DB_PORT=${{ env.DB_PORT }}/" deployment/back-end/.env
+          sed -i "s/DB_DATABASE=.*/DB_DATABASE=${{ secrets.DB_DATABASE }}/" deployment/back-end/.env
+          sed -i "s/DB_USERNAME=.*/DB_USERNAME=${{ secrets.DB_USERNAME }}/" deployment/back-end/.env
+          sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=${{ secrets.DB_PASSWORD }}/" deployment/back-end/.env
+          
           if [ -f "front-end/env.example" ]; then
-            cp front-end/env.example front-end/.env
-            sed -i "s|NEXT_PUBLIC_API_URL=.*|NEXT_PUBLIC_API_URL=https://${{ secrets.ALB_DNS }}/api|" front-end/.env
+            cp front-end/env.example deployment/front-end/.env
+            sed -i "s|NEXT_PUBLIC_API_URL=.*|NEXT_PUBLIC_API_URL=https://${{ secrets.ALB_DNS }}/api|" deployment/front-end/.env
           fi
 
-          # Prepare docker-compose.yml
           sed \
             -e "s/\${ECR_PUBLIC_ALIAS}/${{ secrets.ECR_PUBLIC_ALIAS }}/g" \
             -e "s/\${TAG}/${{ github.sha }}/g" \
             -e "s/\${ALB_DNS}/${{ secrets.ALB_DNS }}/g" \
             docker-compose.prod.yml > docker-compose.yml
 
-          # Copy deploy script
           cp scripts/deploy-prod.sh .
 
       - name: Setup SSH
@@ -143,15 +140,29 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan ${{ secrets.JUMP_HOST }} >> ~/.ssh/known_hosts
 
+      - name: Ensure remote directory exists
+        run: |
+          ssh -o StrictHostKeyChecking=no \
+            -J ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }} \
+            ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }} \
+            "mkdir -p /home/ubuntu/app"
+
       - name: Copy deployment files
         run: |
           scp -o StrictHostKeyChecking=no \
             -o ProxyCommand="ssh -W %h:%p ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }}" \
             docker-compose.yml \
-            back-end/.env \
-            front-end/.env \
+            deployment/back-end/.env \
+            deployment/front-end/.env \
             deploy-prod.sh \
             ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }}:/home/ubuntu/app/
+
+      - name: Verify files were copied
+        run: |
+          ssh -o StrictHostKeyChecking=no \
+            -J ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }} \
+            ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }} \
+            "ls -la /home/ubuntu/app"
 
       - name: Make deploy script executable
         run: |
