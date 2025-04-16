@@ -87,6 +87,6 @@ exec "$@"
 # run_migrations
 # # clear_cache
 
-# # Start Laravel's built-in server
-# echo "Starting Laravel application..."
-# exec php artisan serve --host=0.0.0.0 --port=8000
+# Start Laravel's built-in server
+echo "Starting Laravel application..."
+exec php artisan serve --host=0.0.0.0 --port=8000

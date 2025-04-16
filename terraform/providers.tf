@@ -15,5 +15,5 @@ provider "aws" {
 # Alias for ECR public provider
 provider "aws" {
   alias  = "ecr-public"
-  region = "us-east-1"  
+  region = "us-east-1"
 }

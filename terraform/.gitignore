@@ -1,29 +1,29 @@
-# Ignore Terraform state files
+# Terraform state and backup files
 *.tfstate
 *.tfstate.backup
 terraform.tfstate
 terraform.tfstate.backup
-!terraform.tfvars.example  # Keep an example of tfvars for reference
 
-# Ignore crash logs
-crash.log
-*.log
-
-# Ignore sensitive Terraform variables
+# Terraform variable files (exclude the example)
 terraform.tfvars
 *.auto.tfvars
+!terraform.tfvars.example
 
-# Ignore Terraform working directories
+# Terraform directories and lock files
 .terraform/
 .terraform.lock.hcl
 
-# Ignore plan output files
+# Terraform plan files
 *.tfplan
 
-# Ignore IDE/editor-specific files
+# Crash logs and general logs
+crash.log
+*.log
+
+# IDE/editor-specific settings
 .vscode/
 .idea/
 *.iml
 
-# Ignore MacOS system files
-.DS_Store
+# PEM key files (keep these out of Git)
+*.pem
