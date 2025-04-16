@@ -1,4 +1,3 @@
-# Stage 1: Build the application
 FROM node:18-alpine AS builder
 
 WORKDIR /app
@@ -10,12 +9,10 @@ COPY . .
 RUN npm run build
 RUN npm prune --production
 
-# Stage 2: Production image
 FROM node:18-alpine
 
 WORKDIR /app
 
-# Install curl (for health check or debugging)
 RUN apk add --no-cache curl
 
 COPY --from=builder /app/package.json ./
@@ -33,13 +30,16 @@ EXPOSE 3000
 
 CMD ["npm", "start"]
 
-# # Stage 1: Build the application
-# FROM node:18-alpine AS builder
+
+#  Stage 1: Build the application just in case
+# FROM node:22-alpine AS builder
 
 # WORKDIR /app
 
-# # Copy only package files to install dependencies first (better caching)
+# # Copy package files first for better caching
 # COPY package.json package-lock.json ./
+
+# # Install all dependencies (including devDependencies for build)
 # RUN npm ci
 
 # # Copy source code and build
@@ -50,12 +50,9 @@ CMD ["npm", "start"]
 # RUN npm prune --production
 
 # # Stage 2: Production image
-# FROM node:18-alpine
+# FROM node:22-alpine
 
 # WORKDIR /app
-
-# # Install curl (for health check or debugging)
-# RUN apk add --no-cache curl
 
 # # Copy essential files from builder stage
 # COPY --from=builder /app/package.json ./
@@ -64,9 +61,7 @@ CMD ["npm", "start"]
 # COPY --from=builder /app/public ./public
 # COPY --from=builder /app/node_modules ./node_modules
 
-# # Ensure production dependencies are intact (optional if needed)
-# RUN npm install --production --legacy-peer-deps
-
+# # Environment variables
 # ENV NODE_ENV=production
 # ENV NEXT_TELEMETRY_DISABLED=1
 
