@@ -32,12 +32,12 @@ for VAR in "${REQUIRED_VARS[@]}"; do
 done
 
 # Docker login to ECR
-echo "Logging in to ECR Public..."
-aws ecr-public get-login-password --region us-east-1 | \
-  docker login --username AWS --password-stdin public.ecr.aws || {
-  echo "ECR login failed"
-  exit 1
-}
+# echo "Logging in to ECR Public..."
+# aws ecr-public get-login-password --region us-east-1 | \
+#   docker login --username AWS --password-stdin public.ecr.aws || {
+#   echo "ECR login failed"
+#   exit 1
+# }
 
 # Pull, stop old, start new containers
 echo "Pulling latest Docker images..."
