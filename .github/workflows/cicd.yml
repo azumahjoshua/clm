@@ -145,24 +145,34 @@ jobs:
           ssh -o StrictHostKeyChecking=no \
             -J ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }} \
             ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }} \
-            "mkdir -p /home/ubuntu/app"
+            "mkdir -p /home/ubuntu/app/back-end /home/ubuntu/app/front-end"
 
       - name: Copy deployment files
         run: |
           scp -o StrictHostKeyChecking=no \
             -o ProxyCommand="ssh -W %h:%p ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }}" \
             docker-compose.yml \
-            deployment/back-end/.env \
-            deployment/front-end/.env \
             deploy-prod.sh \
             ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }}:/home/ubuntu/app/
+
+          scp -o StrictHostKeyChecking=no \
+            -o ProxyCommand="ssh -W %h:%p ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }}" \
+            deployment/back-end/.env \
+            ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }}:/home/ubuntu/app/back-end/
+
+          scp -o StrictHostKeyChecking=no \
+            -o ProxyCommand="ssh -W %h:%p ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }}" \
+            deployment/front-end/.env \
+            ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }}:/home/ubuntu/app/front-end/
 
       - name: Verify files were copied
         run: |
           ssh -o StrictHostKeyChecking=no \
             -J ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }} \
             ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }} \
-            "ls -la /home/ubuntu/app"
+            "ls -la /home/ubuntu/app && \
+             ls -la /home/ubuntu/app/back-end && \
+             ls -la /home/ubuntu/app/front-end"
 
       - name: Make deploy script executable
         run: |
