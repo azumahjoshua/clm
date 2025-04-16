@@ -19,6 +19,9 @@ FROM node:18-alpine
 
 WORKDIR /app
 
+# Install curl (for health check or debugging)
+RUN apk add --no-cache curl
+
 # Copy essential files from builder stage
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/package-lock.json ./
