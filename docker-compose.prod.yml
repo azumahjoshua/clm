@@ -4,18 +4,21 @@ services:
     container_name: clm-backend
     volumes:
       - clm-storage:/var/www/storage
+      - ./back-end/.env:/var/www/.env
     networks:
       - clm-network
-    environment:
-      - APP_ENV=production
-      - APP_DEBUG=false
-      - APP_URL=http://${ALB_DNS}
-      - DB_CONNECTION=${DB_CONNECTION}
-      - DB_HOST=${DB_HOST}
-      - DB_PORT=${DB_PORT}
-      - DB_DATABASE=${DB_DATABASE}
-      - DB_USERNAME=${DB_USERNAME}
-      - DB_PASSWORD=${DB_PASSWORD}
+    # env_file:
+    # - /home/ubuntu/app/back-end/.env 
+    # environment:
+    #   - APP_ENV=production
+    #   - APP_DEBUG=false
+    #   - APP_URL=http://${ALB_DNS}
+    #   - DB_CONNECTION=${DB_CONNECTION}
+    #   - DB_HOST=${DB_HOST}
+    #   - DB_PORT=${DB_PORT}
+    #   - DB_DATABASE=${DB_DATABASE}
+    #   - DB_USERNAME=${DB_USERNAME}
+    #   - DB_PASSWORD=${DB_PASSWORD}
     restart: unless-stopped
     ports:
       - "8000:8000"
@@ -30,9 +33,13 @@ services:
     container_name: clm-frontend
     networks:
       - clm-network
-    environment:
-      - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=http://${ALB_DNS}/api
+    volumes:
+      - ./front-end/.env:/app/.env
+    # env_file:
+    # - /home/ubuntu/app/front-end/.env 
+    # environment:
+    #   - NODE_ENV=production
+    #   - NEXT_PUBLIC_API_URL=http://${ALB_DNS}/api
     restart: unless-stopped
     ports:
       - "3000:3000"
