@@ -107,7 +107,7 @@ jobs:
       - name: Prepare deployment files
         run: |
           mkdir -p deployment/back-end deployment/front-end
-          
+
           cp back-end/env.example deployment/back-end/.env
           sed -i "s/APP_ENV=.*/APP_ENV=production/" deployment/back-end/.env
           sed -i "s/APP_DEBUG=.*/APP_DEBUG=false/" deployment/back-end/.env
@@ -118,7 +118,7 @@ jobs:
           sed -i "s/DB_DATABASE=.*/DB_DATABASE=${{ secrets.DB_DATABASE }}/" deployment/back-end/.env
           sed -i "s/DB_USERNAME=.*/DB_USERNAME=${{ secrets.DB_USERNAME }}/" deployment/back-end/.env
           sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=${{ secrets.DB_PASSWORD }}/" deployment/back-end/.env
-          
+
           if [ -f "front-end/env.example" ]; then
             cp front-end/env.example deployment/front-end/.env
             sed -i "s|BACKEND_API_HOST=.*|BACKEND_API_HOST=https://${{ secrets.ALB_DNS }}/api|" deployment/front-end/.env
@@ -137,35 +137,328 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.CLM_KEY_JOSHUA }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan ${{ secrets.JUMP_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ secrets.JUMP_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Ensure remote directory exists
+      - name: Ensure remote directory structure and permissions
         run: |
           ssh -o StrictHostKeyChecking=no \
             -J ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }} \
-            ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }} \
-            "mkdir -p /home/ubuntu/app/back-end /home/ubuntu/app/front-end"
+            ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }} << 'EOF'
+            set -e
+            sudo mkdir -p /home/ubuntu/app/back-end /home/ubuntu/app/front-end
+            sudo chown -R ubuntu:ubuntu /home/ubuntu/app
+          EOF
 
-      - name: Copy deployment files
+      - name: Copy deployment files to EC2
         run: |
+          set -e
+          echo "🟡 Copying docker-compose.yml and deploy script..."
           for file in docker-compose.yml deploy-prod.sh; do
-            scp -o ProxyCommand="ssh -W %h:%p ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }}" \
+            echo "→ Copying $file"
+            scp -v -o ProxyCommand="ssh -W %h:%p ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }}" \
               $file ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }}:/home/ubuntu/app/
           done
 
+          echo "🟡 Copying .env files..."
           for envfile in deployment/back-end/.env deployment/front-end/.env; do
-            scp -o ProxyCommand="ssh -W %h:%p ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }}" \
-              $envfile ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }}:/home/ubuntu/app/${envfile#deployment/}
+            dest_path="/home/ubuntu/app/${envfile#deployment/}"
+            echo "→ Copying $envfile to $dest_path"
+            scp -v -o ProxyCommand="ssh -W %h:%p ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }}" \
+              "$envfile" ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }}:"$dest_path"
           done
 
       - name: Verify files on EC2
         run: |
+          echo "🟢 Verifying files..."
           ssh -J ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }} \
-              ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }} \
-              "ls -la /home/ubuntu/app /home/ubuntu/app/back-end /home/ubuntu/app/front-end"
+            ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }} << 'EOF'
+            set -e
+            echo "Listing /home/ubuntu/app:"
+            ls -la /home/ubuntu/app
+            echo "Listing /home/ubuntu/app/back-end:"
+            ls -la /home/ubuntu/app/back-end
+            echo "Listing /home/ubuntu/app/front-end:"
+            ls -la /home/ubuntu/app/front-end
+          EOF
 
-      - name: Run deployment script
+      - name: Run deployment script on EC2
         run: |
+          echo "🚀 Running deployment script..."
           ssh -J ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }} \
-              ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }} \
-              "chmod +x /home/ubuntu/app/deploy-prod.sh && /home/ubuntu/app/deploy-prod.sh"
+            ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }} \
+            "chmod +x /home/ubuntu/app/deploy-prod.sh && /home/ubuntu/app/deploy-prod.sh"
+# name: Build, Push to ECR Public, and Deploy
+
+# on:
+#   push:
+#     branches: [main]
+#     paths:
+#       - 'back-end/**'
+#       - 'front-end/**'
+#       - '.github/workflows/cicd.yml'
+
+# env:
+#   AWS_REGION: us-east-1
+#   ECR_REGISTRY: public.ecr.aws
+#   REPO_RETENTION_DAYS: 30
+#   DB_PORT: 5432
+#   DB_CONNECTION: pgsql
+#   COMPOSE_PROJECT_NAME: clm-prod
+
+# jobs:
+#   build-and-push:
+#     runs-on: ubuntu-latest
+#     permissions:
+#       id-token: write
+#       contents: read
+#       packages: write
+
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
+
+#       - name: Configure AWS credentials
+#         uses: aws-actions/configure-aws-credentials@v2
+#         with:
+#           aws-region: ${{ env.AWS_REGION }}
+#           role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN }}
+#           role-session-name: github-actions-${{ github.run_id }}
+
+#       - name: Login to ECR Public
+#         run: |
+#           aws ecr-public get-login-password --region ${{ env.AWS_REGION }} | \
+#           docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
+
+#       - name: Clean up old Docker images
+#         run: |
+#           RETENTION_DATE=$(date -d "-${REPO_RETENTION_DAYS} days" +%Y-%m-%dT%H:%M:%SZ)
+#           for repo in laravel-backend nextjs-frontend; do
+#             aws ecr-public batch-delete-image \
+#               --repository-name $repo \
+#               --region ${{ env.AWS_REGION }} \
+#               --image-ids "$(aws ecr-public describe-images \
+#                 --repository-name $repo \
+#                 --region ${{ env.AWS_REGION }} \
+#                 --query "imageDetails[?imagePushedAt<'$RETENTION_DATE'].imageDigest" \
+#                 --output json | jq -r 'map({imageDigest: .})')" || true
+#           done
+
+#       - name: Setup Docker Buildx
+#         uses: docker/setup-buildx-action@v2
+
+#       - name: Build and Push Backend Image
+#         uses: docker/build-push-action@v4
+#         with:
+#           context: ./back-end
+#           file: ./back-end/Dockerfile
+#           push: true
+#           tags: |
+#             ${{ env.ECR_REGISTRY }}/${{ secrets.ECR_PUBLIC_ALIAS }}/laravel-backend:latest
+#             ${{ env.ECR_REGISTRY }}/${{ secrets.ECR_PUBLIC_ALIAS }}/laravel-backend:${{ github.sha }}
+#           platforms: linux/amd64
+#           cache-from: type=gha
+#           cache-to: type=gha,mode=max
+
+#       - name: Build and Push Frontend Image
+#         uses: docker/build-push-action@v4
+#         with:
+#           context: ./front-end
+#           file: ./front-end/Dockerfile
+#           push: true
+#           build-args: |
+#             NEXT_PUBLIC_API_URL=https://${{ secrets.ALB_DNS }}/api
+#           tags: |
+#             ${{ env.ECR_REGISTRY }}/${{ secrets.ECR_PUBLIC_ALIAS }}/nextjs-frontend:latest
+#             ${{ env.ECR_REGISTRY }}/${{ secrets.ECR_PUBLIC_ALIAS }}/nextjs-frontend:${{ github.sha }}
+#           platforms: linux/amd64
+#           cache-from: type=gha
+#           cache-to: type=gha,mode=max
+
+
+#    deploy-to-ec2:
+#   needs: build-and-push
+#   runs-on: ubuntu-latest
+#   permissions:
+#     id-token: write
+#     contents: read
+#     packages: write
+
+#   steps:
+#     - name: Checkout code
+#       uses: actions/checkout@v4
+
+#     - name: Configure AWS credentials
+#       uses: aws-actions/configure-aws-credentials@v2
+#       with:
+#         aws-region: ${{ env.AWS_REGION }}
+#         role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN }}
+#         role-session-name: github-actions-${{ github.run_id }}
+
+#     - name: Prepare deployment files
+#       run: |
+#         mkdir -p deployment/back-end deployment/front-end
+
+#         cp back-end/env.example deployment/back-end/.env
+#         sed -i "s/APP_ENV=.*/APP_ENV=production/" deployment/back-end/.env
+#         sed -i "s/APP_DEBUG=.*/APP_DEBUG=false/" deployment/back-end/.env
+#         sed -i "s|APP_URL=.*|APP_URL=https://${{ secrets.ALB_DNS }}|" deployment/back-end/.env
+#         sed -i "s/DB_CONNECTION=.*/DB_CONNECTION=${{ env.DB_CONNECTION }}/" deployment/back-end/.env
+#         sed -i "s/DB_HOST=.*/DB_HOST=${{ secrets.DB_HOST }}/" deployment/back-end/.env
+#         sed -i "s/DB_PORT=.*/DB_PORT=${{ env.DB_PORT }}/" deployment/back-end/.env
+#         sed -i "s/DB_DATABASE=.*/DB_DATABASE=${{ secrets.DB_DATABASE }}/" deployment/back-end/.env
+#         sed -i "s/DB_USERNAME=.*/DB_USERNAME=${{ secrets.DB_USERNAME }}/" deployment/back-end/.env
+#         sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=${{ secrets.DB_PASSWORD }}/" deployment/back-end/.env
+
+#         if [ -f "front-end/env.example" ]; then
+#           cp front-end/env.example deployment/front-end/.env
+#           sed -i "s|BACKEND_API_HOST=.*|BACKEND_API_HOST=https://${{ secrets.ALB_DNS }}/api|" deployment/front-end/.env
+#         fi
+
+#         sed \
+#           -e "s/\${ECR_PUBLIC_ALIAS}/${{ secrets.ECR_PUBLIC_ALIAS }}/g" \
+#           -e "s/\${TAG}/${{ github.sha }}/g" \
+#           -e "s/\${ALB_DNS}/${{ secrets.ALB_DNS }}/g" \
+#           docker-compose.prod.yml > docker-compose.yml
+
+#         cp scripts/deploy-prod.sh .
+
+#     - name: Setup SSH
+#       run: |
+#         mkdir -p ~/.ssh
+#         echo "${{ secrets.CLM_KEY_JOSHUA }}" > ~/.ssh/id_rsa
+#         chmod 600 ~/.ssh/id_rsa
+#         ssh-keyscan -H ${{ secrets.JUMP_HOST }} >> ~/.ssh/known_hosts
+
+#     - name: Ensure remote directory structure and permissions
+#       run: |
+#         ssh -o StrictHostKeyChecking=no \
+#           -J ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }} \
+#           ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }} << 'EOF'
+#             set -e
+#             sudo mkdir -p /home/ubuntu/app/back-end /home/ubuntu/app/front-end
+#             sudo chown -R ubuntu:ubuntu /home/ubuntu/app
+#         EOF
+
+#     - name: Copy deployment files to EC2
+#       run: |
+#         set -e
+#         echo "🟡 Copying docker-compose.yml and deploy script..."
+#         for file in docker-compose.yml deploy-prod.sh; do
+#           echo "→ Copying $file"
+#           scp -v -o ProxyCommand="ssh -W %h:%p ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }}" \
+#             $file ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }}:/home/ubuntu/app/
+#         done
+
+#         echo "🟡 Copying .env files..."
+#         for envfile in deployment/back-end/.env deployment/front-end/.env; do
+#           dest_path="/home/ubuntu/app/${envfile#deployment/}"
+#           echo "→ Copying $envfile to $dest_path"
+#           scp -v -o ProxyCommand="ssh -W %h:%p ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }}" \
+#             "$envfile" ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }}:"$dest_path"
+#         done
+
+#     - name: Verify files on EC2
+#       run: |
+#         echo "🟢 Verifying files..."
+#         ssh -J ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }} \
+#           ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }} << 'EOF'
+#             set -e
+#             echo "Listing /home/ubuntu/app:"
+#             ls -la /home/ubuntu/app
+#             echo "Listing /home/ubuntu/app/back-end:"
+#             ls -la /home/ubuntu/app/back-end
+#             echo "Listing /home/ubuntu/app/front-end:"
+#             ls -la /home/ubuntu/app/front-end
+#         EOF
+
+#     - name: Run deployment script on EC2
+#       run: |
+#         echo "🚀 Running deployment script..."
+#         ssh -J ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }} \
+#           ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }} \
+#           "chmod +x /home/ubuntu/app/deploy-prod.sh && /home/ubuntu/app/deploy-prod.sh"
+       
+#   # deploy-to-ec2:
+#   #   needs: build-and-push
+#   #   runs-on: ubuntu-latest
+#   #   permissions:
+#   #     id-token: write
+#   #     contents: read
+#   #     packages: write
+
+#   #   steps:
+#   #     - name: Checkout code
+#   #       uses: actions/checkout@v4
+
+#   #     - name: Configure AWS credentials
+#   #       uses: aws-actions/configure-aws-credentials@v2
+#   #       with:
+#   #         aws-region: ${{ env.AWS_REGION }}
+#   #         role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN }}
+#   #         role-session-name: github-actions-${{ github.run_id }}
+
+#   #     - name: Prepare deployment files
+#   #       run: |
+#   #         mkdir -p deployment/back-end deployment/front-end
+          
+#   #         cp back-end/env.example deployment/back-end/.env
+#   #         sed -i "s/APP_ENV=.*/APP_ENV=production/" deployment/back-end/.env
+#   #         sed -i "s/APP_DEBUG=.*/APP_DEBUG=false/" deployment/back-end/.env
+#   #         sed -i "s|APP_URL=.*|APP_URL=https://${{ secrets.ALB_DNS }}|" deployment/back-end/.env
+#   #         sed -i "s/DB_CONNECTION=.*/DB_CONNECTION=${{ env.DB_CONNECTION }}/" deployment/back-end/.env
+#   #         sed -i "s/DB_HOST=.*/DB_HOST=${{ secrets.DB_HOST }}/" deployment/back-end/.env
+#   #         sed -i "s/DB_PORT=.*/DB_PORT=${{ env.DB_PORT }}/" deployment/back-end/.env
+#   #         sed -i "s/DB_DATABASE=.*/DB_DATABASE=${{ secrets.DB_DATABASE }}/" deployment/back-end/.env
+#   #         sed -i "s/DB_USERNAME=.*/DB_USERNAME=${{ secrets.DB_USERNAME }}/" deployment/back-end/.env
+#   #         sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=${{ secrets.DB_PASSWORD }}/" deployment/back-end/.env
+          
+#   #         if [ -f "front-end/env.example" ]; then
+#   #           cp front-end/env.example deployment/front-end/.env
+#   #           sed -i "s|BACKEND_API_HOST=.*|BACKEND_API_HOST=https://${{ secrets.ALB_DNS }}/api|" deployment/front-end/.env
+#   #         fi
+
+#   #         sed \
+#   #           -e "s/\${ECR_PUBLIC_ALIAS}/${{ secrets.ECR_PUBLIC_ALIAS }}/g" \
+#   #           -e "s/\${TAG}/${{ github.sha }}/g" \
+#   #           -e "s/\${ALB_DNS}/${{ secrets.ALB_DNS }}/g" \
+#   #           docker-compose.prod.yml > docker-compose.yml
+
+#   #         cp scripts/deploy-prod.sh .
+
+#   #     - name: Setup SSH
+#   #       run: |
+#   #         mkdir -p ~/.ssh
+#   #         echo "${{ secrets.CLM_KEY_JOSHUA }}" > ~/.ssh/id_rsa
+#   #         chmod 600 ~/.ssh/id_rsa
+#   #         ssh-keyscan ${{ secrets.JUMP_HOST }} >> ~/.ssh/known_hosts
+
+#   #     - name: Ensure remote directory exists
+#   #       run: |
+#   #         ssh -o StrictHostKeyChecking=no \
+#   #           -J ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }} \
+#   #           ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }} \
+#   #           "mkdir -p /home/ubuntu/app/back-end /home/ubuntu/app/front-end"
+
+#   #     - name: Copy deployment files
+#   #       run: |
+#   #         for file in docker-compose.yml deploy-prod.sh; do
+#   #           scp -o ProxyCommand="ssh -W %h:%p ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }}" \
+#   #             $file ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }}:/home/ubuntu/app/
+#   #         done
+
+#   #         for envfile in deployment/back-end/.env deployment/front-end/.env; do
+#   #           scp -o ProxyCommand="ssh -W %h:%p ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }}" \
+#   #             $envfile ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }}:/home/ubuntu/app/${envfile#deployment/}
+#   #         done
+
+#   #     - name: Verify files on EC2
+#   #       run: |
+#   #         ssh -J ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }} \
+#   #             ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }} \
+#   #             "ls -la /home/ubuntu/app /home/ubuntu/app/back-end /home/ubuntu/app/front-end"
+
+#   #     - name: Run deployment script
+#   #       run: |
+#   #         ssh -J ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }} \
+#   #             ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }} \
+#   #             "chmod +x /home/ubuntu/app/deploy-prod.sh && /home/ubuntu/app/deploy-prod.sh"
