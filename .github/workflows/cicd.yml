@@ -152,24 +152,24 @@ jobs:
       - name: Copy deployment files to EC2
         run: |
           set -e
-          echo "🟡 Copying docker-compose.yml and deploy script..."
+          echo "Copying docker-compose.yml and deploy script..."
           for file in docker-compose.yml deploy-prod.sh; do
-            echo "→ Copying $file"
+            echo "Copying $file"
             scp -v -o ProxyCommand="ssh -W %h:%p ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }}" \
               $file ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }}:/home/ubuntu/app/
           done
 
-          echo "🟡 Copying .env files..."
+          echo "Copying .env files..."
           for envfile in deployment/back-end/.env deployment/front-end/.env; do
             dest_path="/home/ubuntu/app/${envfile#deployment/}"
-            echo "→ Copying $envfile to $dest_path"
+            echo "Copying $envfile to $dest_path"
             scp -v -o ProxyCommand="ssh -W %h:%p ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }}" \
               "$envfile" ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }}:"$dest_path"
           done
 
       - name: Verify files on EC2
         run: |
-          echo "🟢 Verifying files..."
+          echo "Verifying files..."
           ssh -J ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }} \
             ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }} << 'EOF'
             set -e
@@ -183,7 +183,7 @@ jobs:
 
       - name: Run deployment script on EC2
         run: |
-          echo "🚀 Running deployment script..."
+          echo "Running deployment script..."
           ssh -J ${{ secrets.SSH_USER }}@${{ secrets.JUMP_HOST }} \
             ${{ secrets.SSH_USER }}@${{ secrets.PRIVATE_HOST }} \
             "chmod +x /home/ubuntu/app/deploy-prod.sh && /home/ubuntu/app/deploy-prod.sh"
